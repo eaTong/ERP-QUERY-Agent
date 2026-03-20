@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  username  String     @unique
+  password  String
+  email     String?
+  avatar    String?
+  status    Int        @default(1)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  roles     UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  code        String     @unique
+  description String?
+  status      Int        @default(1)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  menus       RoleMenu[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Menu {
+  id        String     @id @default(uuid())
+  name      String
+  path      String
+  icon      String?
+  parentId  String?
+  sort      Int        @default(0)
+  status    Int        @default(1)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  children  RoleMenu[]
+
+  @@map("menus")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId], map: "user_roles_roleId_fkey")
+  @@map("user_roles")
+}
+
+model RoleMenu {
+  id        String   @id @default(uuid())
+  roleId    String
+  menuId    String
+  createdAt DateTime @default(now())
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, menuId])
+  @@index([menuId], map: "role_menus_menuId_fkey")
+  @@map("role_menus")
+}
+
+model DataSource {
+  id            String         @id @default(uuid())
+  name          String
+  type          String
+  host          String
+  port          Int
+  database      String
+  username      String
+  password      String
+  description   String?
+  status        Int            @default(1)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tableMappings TableMapping[]
+
+  @@map("data_sources")
+}
+
+model TableMapping {
+  id                String         @id @default(uuid())
+  dataSourceId      String
+  externalTableName String
+  localAlias        String
+  useCase           String?
+  queryRules        String?
+  enabled           Int            @default(1)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  fields            FieldMapping[]
+  dataSource        DataSource     @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+
+  @@unique([dataSourceId, localAlias])
+  @@map("table_mappings")
+}
+
+model FieldMapping {
+  id                String       @id @default(uuid())
+  tableMappingId    String
+  externalFieldName String
+  localAlias        String
+  fieldDescription  String?
+  displayRules      String?
+  enabled           Int          @default(1)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  tableMapping      TableMapping @relation(fields: [tableMappingId], references: [id], onDelete: Cascade)
+
+  @@unique([tableMappingId, localAlias])
+  @@map("field_mappings")
+}
+
+model PromptRule {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  content     String
+  enabled     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("prompt_rules")
+}
+
+// 查询历史记录
+model QueryHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  query     String
+  sql       String?
+  tables    String?
+  status    Int      @default(1)  // 1: 成功, 0: 失败
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("query_history")
+}

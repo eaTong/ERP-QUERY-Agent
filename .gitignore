@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test
+test-results/
+playwright-report/
+blob-report/
+*.test.js
+*.test.js.map
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Playwright
+playwright/.cache/
+playwright/.auth/
+
+# Claude
+.claude/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
