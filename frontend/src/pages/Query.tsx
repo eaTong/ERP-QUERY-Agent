@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer, Collapse } from 'antd';
 import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined, BulbOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { queryApi } from '../services/api';
 
 const { TextArea } = Input;
@@ -23,6 +25,22 @@ interface QueryHistory {
   status: number;
   createdAt: string;
 }
+
+// 解析AI分析结果，分离思考过程和markdown内容
+const parseAnalysisResult = (result: string): { thinkProcess: string | null; markdown: string } => {
+  const thinkOpenTag = '<think>';
+  const thinkCloseTag = '</think>';
+  const thinkOpenIndex = result.indexOf(thinkOpenTag);
+  const thinkCloseIndex = result.indexOf(thinkCloseTag);
+
+  if (thinkOpenIndex !== -1 && thinkCloseIndex !== -1 && thinkCloseIndex > thinkOpenIndex) {
+    const thinkProcess = result.substring(thinkOpenIndex + thinkOpenTag.length, thinkCloseIndex).trim();
+    const markdown = result.substring(thinkCloseIndex + thinkCloseTag.length).trim();
+    return { thinkProcess, markdown };
+  }
+
+  return { thinkProcess: null, markdown: result };
+};
 
 function Query() {
   const [input, setInput] = useState('');
@@ -64,7 +82,6 @@ function Query() {
     try {
       const result = await queryApi.send(input);
       setCurrentResult(result);
-      setInput('');
       // 刷新历史
       if (historyDrawerVisible) {
         loadHistory();
@@ -265,19 +282,53 @@ function Query() {
             关闭
           </Button>,
         ]}
-        width={700}
+        width={800}
       >
-        <div style={{
-          background: '#f5f5f5',
-          padding: '16px',
-          borderRadius: '8px',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          maxHeight: '400px',
-          overflow: 'auto',
-        }}>
-          {analyzeResult}
-        </div>
+        {analyzeResult && (() => {
+          const { thinkProcess, markdown } = parseAnalysisResult(analyzeResult);
+          return (
+            <div>
+              {thinkProcess && (
+                <Collapse
+                  ghost
+                  style={{ marginBottom: '16px' }}
+                  items={[{
+                    key: 'think',
+                    label: '分析过程',
+                    children: (
+                      <pre style={{
+                        background: '#f5f5f5',
+                        padding: '12px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        maxHeight: '200px',
+                        overflow: 'auto',
+                      }}>
+                        {thinkProcess}
+                      </pre>
+                    ),
+                  }]}
+                />
+              )}
+              <div
+                className="markdown-content"
+                style={{
+                  padding: '16px',
+                  borderRadius: '8px',
+                  background: '#fafafa',
+                  maxHeight: '500px',
+                  overflow: 'auto',
+                }}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {markdown}
+                </ReactMarkdown>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* 历史记录抽屉 */}
