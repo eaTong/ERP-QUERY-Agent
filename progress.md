@@ -2,6 +2,38 @@
 
 ## 会话记录
 
+### 2026-03-21 (下午)
+
+**阶段 A: 后端 - 提取 AI 思考过程**
+
+- [x] 修改 `backend/src/services/ai.ts` 提取 AI 思考过程
+  - 修复文件中的编码问题（原文件 `<think>` 标签已损坏）
+  - 使用 `[THINK_START]` 和 `[THINK_END]` 作为标记
+  - 将 `thinkProcess` 声明在方法作用域（try 块之前）以避免 TypeScript 作用域问题
+  - 在返回类型和返回对象中添加 `thinkProcess` 字段
+- [x] 所有 21 个后端测试通过
+
+---
+
+**SQL 别名以数字开头问题修复**
+
+- [x] 问题：AI 生成的 SQL 列别名以数字开头（如 `AS 20合同个数`），导致 SQL Server 执行失败：`Incorrect syntax near '20'`
+- [x] 修复：在 `backend/src/services/ai.ts` 的 SQLServer 系统规则中添加别名规则
+- [x] 新增规则：列别名也不能以数字开头，需要用方括号包裹，如 `SELECT col AS [20合同个数]`
+- [x] 提交：`7509e46` fix: SQLServer列别名不能以数字开头的规则
+
+---
+
+### 2026-03-21
+
+**CLAUDE.md Development Rules 已确认**
+
+- [x] 确认 CLAUDE.md 已包含 "Development Rules" 部分（第 116-120 行）
+- [x] 内容与计划要求一致
+- [x] 无需修改
+
+---
+
 ### 2026-03-20
 
 - 项目初始化完成

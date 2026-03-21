@@ -127,6 +127,7 @@ export class AIService {
     promptRules: string[];
     data: any[];
     columns: string[];
+    thinkProcess: string;
   }> {
     // 1. 获取所有启用的表映射
     const tableMappings = await prisma.tableMapping.findMany({
@@ -177,6 +178,7 @@ export class AIService {
     const sqlPrompt = this.buildSQLQueryPrompt(context, userQuery);
 
     let generatedSQL = '';
+    let thinkProcess = '';
     try {
       const response = await axios.post(
         MINI_MAX_API_URL,
@@ -202,11 +204,14 @@ export class AIService {
 
       generatedSQL = response.data.choices?.[0]?.message?.content?.trim() || '';
 
-      // MiniMax 返回格式中可能包含 <think>...</think> 标签，需要提取标签后的实际内容
-      const thinkCloseTag = '</think>';
-      const thinkIndex = generatedSQL.indexOf(thinkCloseTag);
-      if (thinkIndex !== -1) {
-        generatedSQL = generatedSQL.substring(thinkIndex + thinkCloseTag.length).trim();
+// MiniMax 返回格式中可能包含<think>...</think> 标签，需要提取标签后的实际内容
+      const thinkOpenTag = '[THINK_START]';
+      const thinkCloseTag = '[THINK_END]';
+      const thinkOpenIndex = generatedSQL.indexOf(thinkOpenTag);
+      const thinkCloseIndex = generatedSQL.indexOf(thinkCloseTag);
+      if (thinkOpenIndex !== -1 && thinkCloseIndex !== -1 && thinkCloseIndex > thinkOpenIndex) {
+        thinkProcess = generatedSQL.substring(thinkOpenIndex + thinkOpenTag.length, thinkCloseIndex).trim();
+        generatedSQL = generatedSQL.substring(thinkCloseIndex + thinkCloseTag.length).trim();
       }
     } catch (error: any) {
       console.error('MiniMax API error:', error.message);
@@ -322,6 +327,7 @@ export class AIService {
       promptRules: promptRules.map((pr) => pr.name),
       data: processedResult,
       columns,
+      thinkProcess,
     };
   }
 
