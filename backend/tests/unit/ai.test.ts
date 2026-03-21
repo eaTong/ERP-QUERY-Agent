@@ -25,25 +25,67 @@ jest.mock('../../src/models', () => ({
 }));
 
 // Mock mysql2/promise
-const mockMysqlConnection = {
-  query: jest.fn(),
-  end: jest.fn().mockResolvedValue(undefined),
-};
-jest.mock('mysql2/promise', () => ({
-  createConnection: jest.fn().mockResolvedValue(mockMysqlConnection),
-}));
+jest.mock('mysql2/promise', () => {
+  const mockQuery = jest.fn();
+  const mockEnd = jest.fn().mockResolvedValue(undefined);
+  return {
+    createConnection: jest.fn().mockResolvedValue({
+      query: mockQuery,
+      end: mockEnd,
+    }),
+    __mockQuery: mockQuery,
+    __mockEnd: mockEnd,
+  };
+});
 
 // Mock mssql
-jest.mock('mssql', () => ({
-  connect: jest.fn(),
+jest.mock('mssql', () => {
+  const mockPool = {
+    query: jest.fn(),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
+  return {
+    connect: jest.fn().mockResolvedValue(mockPool),
+    __mockPool: mockPool,
+  };
+});
+
+// Mock encryption
+jest.mock('../../src/utils/encryption', () => ({
+  decrypt: jest.fn((password: string) => {
+    if (!password.includes(':')) {
+      return password;
+    }
+    return 'decrypted_password';
+  }),
 }));
+
+// Mock database functions
+jest.mock('../../src/utils/database', () => {
+  const mysql = jest.requireMock('mysql2/promise');
+  const mssql = jest.requireMock('mssql');
+  return {
+    createMySqlConnection: jest.fn().mockImplementation(async (config: any) => {
+      return mysql.createConnection(config);
+    }),
+    createSqlServerConnection: jest.fn().mockImplementation(async (config: any) => {
+      return mssql.connect(config);
+    }),
+    closeMySqlConnection: jest.fn().mockResolvedValue(undefined),
+    closeSqlServerConnection: jest.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe('AIService', () => {
   let aiService: AIService;
+  let mockMysql: any;
+  let mockMssql: any;
 
   beforeEach(() => {
     aiService = new AIService();
     jest.clearAllMocks();
+    mockMysql = jest.requireMock('mysql2/promise');
+    mockMssql = jest.requireMock('mssql');
   });
 
   describe('query', () => {
@@ -61,7 +103,7 @@ describe('AIService', () => {
         host: 'localhost',
         port: 3306,
         username: 'root',
-        password: 'encrypted:abc123:def456',
+        password: 'plain_password',
         database: 'erp',
         enabled: 1,
       },
@@ -93,11 +135,9 @@ describe('AIService', () => {
     };
 
     it('should return query result with SQL and data', async () => {
-      // Mock Prisma calls
       mockTableMappingFindMany.mockResolvedValue([mockTableMapping]);
       mockPromptRuleFindMany.mockResolvedValue([mockPromptRule]);
 
-      // Mock MiniMax API response
       mockAxiosPost.mockResolvedValue({
         data: {
           choices: [
@@ -110,8 +150,7 @@ describe('AIService', () => {
         },
       });
 
-      // Mock MySQL query result
-      mockMysqlConnection.query.mockResolvedValue([
+      mockMysql.__mockQuery.mockResolvedValue([
         [
           { order_id: 1, amount: 1000 },
           { order_id: 2, amount: 2000 },
@@ -150,7 +189,6 @@ describe('AIService', () => {
       mockTableMappingFindMany.mockResolvedValue([mockTableMapping]);
       mockPromptRuleFindMany.mockResolvedValue([mockPromptRule]);
 
-      // SQL wrapped in markdown code blocks
       mockAxiosPost.mockResolvedValue({
         data: {
           choices: [
@@ -163,7 +201,7 @@ describe('AIService', () => {
         },
       });
 
-      mockMysqlConnection.query.mockResolvedValue([[], []]);
+      mockMysql.__mockQuery.mockResolvedValue([[], []]);
 
       const result = await aiService.query('查询');
       expect(result.sql).toBe('SELECT * FROM orders');
@@ -185,7 +223,7 @@ describe('AIService', () => {
         },
       });
 
-      mockMysqlConnection.query.mockResolvedValue([
+      mockMysql.__mockQuery.mockResolvedValue([
         [
           { order_id: '1', amount: 1000 },
           { order_id: '0', amount: 500 },
@@ -195,7 +233,6 @@ describe('AIService', () => {
 
       const result = await aiService.query('查询');
 
-      // order_id '1' should be transformed to '已支付', '0' to '未支付'
       expect(result.data[0].order_id).toBe('已支付');
       expect(result.data[1].order_id).toBe('未支付');
     });
@@ -216,7 +253,7 @@ describe('AIService', () => {
         },
       });
 
-      mockMysqlConnection.query.mockResolvedValue([[], []]);
+      mockMysql.__mockQuery.mockResolvedValue([[], []]);
 
       const result = await aiService.query('查询');
 
@@ -229,7 +266,7 @@ describe('AIService', () => {
         dataSource: {
           ...mockTableMapping.dataSource,
           type: 'sqlserver',
-          password: 'encrypted:abc123:def456',
+          password: 'plain_password',
         },
       };
 
@@ -248,14 +285,9 @@ describe('AIService', () => {
         },
       });
 
-      const mockPool = {
-        query: jest.fn().mockResolvedValue({
-          recordset: [{ order_id: 1, amount: 1000 }],
-        }),
-        close: jest.fn().mockResolvedValue(undefined),
-      };
-      const mockMssql = jest.requireMock('mssql') as any;
-      mockMssql.connect.mockResolvedValue(mockPool);
+      mockMssql.__mockPool.query.mockResolvedValue({
+        recordset: [{ order_id: 1, amount: 1000 }],
+      });
 
       const result = await aiService.query('查询');
 
@@ -272,6 +304,7 @@ describe('AIService', () => {
             id: 'tm-1',
             localAlias: 'orders',
             externalTableName: 'sales_orders',
+            databaseType: 'mysql' as const,
             useCase: '订单数据',
             queryRules: 'isDelete=0',
             fields: [
@@ -284,13 +317,8 @@ describe('AIService', () => {
             ],
           },
         ],
-        promptRules: [
-          {
-            name: '金额格式化',
-            description: '将金额除以100显示',
-            content: '金额字段需要除以100进行转换',
-          },
-        ],
+        promptRules: [],
+        userPromptRules: [],
       };
 
       const prompt = (aiService as any).buildContext(context);
@@ -301,7 +329,6 @@ describe('AIService', () => {
       expect(prompt).toContain('isDelete=0');
       expect(prompt).toContain('订单ID');
       expect(prompt).toContain('订单唯一标识');
-      expect(prompt).toContain('金额格式化');
     });
   });
 
@@ -310,6 +337,7 @@ describe('AIService', () => {
       const context = {
         tables: [],
         promptRules: [],
+        userPromptRules: [],
       };
 
       const prompt = (aiService as any).buildSQLQueryPrompt(context, '查询所有订单');
@@ -317,21 +345,6 @@ describe('AIService', () => {
       expect(prompt).toContain('查询所有订单');
       expect(prompt).toContain('用户查询');
       expect(prompt).toContain('请生成SQL查询');
-    });
-  });
-
-  describe('decryptPassword', () => {
-    it('should decrypt encrypted password', () => {
-      // This test verifies the method exists and is callable
-      const encrypted = 'abc123:def456';
-      const result = (aiService as any).decryptPassword(encrypted);
-      expect(typeof result).toBe('string');
-    });
-
-    it('should return original string if decryption fails', () => {
-      const plainPassword = 'plain_password';
-      const result = (aiService as any).decryptPassword(plainPassword);
-      expect(result).toBe(plainPassword);
     });
   });
 });

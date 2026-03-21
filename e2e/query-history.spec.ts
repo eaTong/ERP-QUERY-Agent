@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('查询历史页面', () => {
   test.beforeEach(async ({ page }) => {
     // 登录
-    await page.goto('http://localhost:3022/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
 
@@ -17,7 +17,7 @@ test.describe('查询历史页面', () => {
 
   test('查询页面应该正常显示', async ({ page }) => {
     // 导航到查询页面
-    await page.goto('http://localhost:3022/query');
+    await page.goto('/query');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
 

@@ -2,6 +2,133 @@
 
 ## 当前阶段
 
+**新功能：AI思考过程返回 + AI分析功能**
+
+---
+
+## 新增需求
+
+### 1. AI查询结果返回思考过程
+- AI返回的结果包含<think>标签
+- 需要提取标签内的内容返回前端
+- 前端页面支持展示思考过程
+
+### 2. AI分析功能
+- 用户获取查询结果后，点击"AI分析"按钮
+- 后台将用户查询内容、查询结果、思考过程发送给AI
+- AI分析后返回分析结果
+- 前端展示分析内容
+
+---
+
+## 实现阶段
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| A | 后端：提取AI思考过程并返回 | 待开始 |
+| B | 前端：展示AI思考过程 | 待开始 |
+| C | 后端：新增AI分析接口 | 待开始 |
+| D | 前端：AI分析按钮及展示 | 待开始 |
+
+---
+
+## 阶段 A: 后端 - 提取AI思考过程
+
+**目标:** 从AI响应中提取<think>标签内容
+
+**涉及文件:**
+- `backend/src/services/ai.ts` - AI服务
+
+**实现:**
+```typescript
+// 从AI响应中提取思考过程
+const extractThinkContent = (response: string): string | null => {
+  const thinkMatch = response.match(/<think>([\s\S]*?)<\/think>/);
+  return thinkMatch ? thinkMatch[1].trim() : null;
+};
+
+// 清理AI响应，移除<think>标签
+const cleanResponse = (response: string): string => {
+  return response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+};
+```
+
+---
+
+## 阶段 B: 前端 - 展示AI思考过程
+
+**目标:** 在查询结果区域显示AI思考过程
+
+**涉及文件:**
+- `frontend/src/pages/query/Query.tsx` - AI查询页面
+
+**实现:**
+- 添加"思考过程"折叠面板
+- 查询结果上方显示思考过程
+- 可展开/折叠
+
+---
+
+## 阶段 C: 后端 - AI分析接口
+
+**目标:** 新增分析接口，接收查询内容、结果、思考过程
+
+**接口设计:**
+```
+POST /api/query/analyze
+Body: {
+  query: string,        // 用户原始查询
+  result: object[],     // 查询结果
+  thinkProcess: string,  // AI思考过程
+  tables: string[]       // 涉及的表
+}
+
+Response: {
+  analysis: string       // AI分析结果
+}
+```
+
+**涉及文件:**
+- `backend/src/controllers/query.ts` - 新增 analyze 方法
+- `backend/src/routes/query.ts` - 新增路由
+- `backend/src/services/ai.ts` - 新增 analyze 方法
+
+---
+
+## 阶段 D: 前端 - AI分析功能
+
+**目标:** 添加分析按钮并展示分析结果
+
+**涉及文件:**
+- `frontend/src/pages/query/Query.tsx` - AI查询页面
+- `frontend/src/services/query.ts` - API调用
+
+**实现:**
+- 查询结果区域添加"AI分析"按钮
+- 调用分析接口
+- 展示AI分析结果（可折叠面板）
+
+---
+
+## 涉及文件清单
+
+### 后端
+| 文件 | 变更 |
+|------|------|
+| `backend/src/services/ai.ts` | 提取think标签、返回think内容、新增analyze方法 |
+| `backend/src/controllers/query.ts` | 新增analyze controller |
+| `backend/src/routes/query.ts` | 新增/api/query/analyze路由 |
+
+### 前端
+| 文件 | 变更 |
+|------|------|
+| `frontend/src/services/query.ts` | 新增analyze API |
+| `frontend/src/pages/query/Query.tsx` | 展示思考过程、添加分析按钮 |
+
+---
+
+## 当前阶段
+
 **新功能规划：菜单树形结构**
 
 ---

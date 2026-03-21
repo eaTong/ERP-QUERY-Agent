@@ -9,7 +9,12 @@
   "scripts": {
     "dev": "lsof -ti:4000 | xargs kill -9 2>/dev/null; lsof -ti:3000,3020,3021 | xargs kill -9 2>/dev/null; npm run dev:backend & npm run dev:frontend",
     "dev:backend": "lsof -ti:4000 | xargs kill -9 2>/dev/null; npm run dev --prefix backend",
-    "dev:frontend": "lsof -ti:3000,3020,3021 | xargs kill -9 2>/dev/null; npm run dev --prefix frontend"
+    "dev:frontend": "lsof -ti:3000,3020,3021 | xargs kill -9 2>/dev/null; npm run dev --prefix frontend",
+    "test": "npm run test:backend",
+    "test:backend": "cd backend && npm test",
+    "test:e2e": "cd e2e && npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:all": "npm run test:backend && npm run test:e2e"
   },
   "keywords": [],
   "author": "",

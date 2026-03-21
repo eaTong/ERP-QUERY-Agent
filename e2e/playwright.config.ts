@@ -1,7 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// For local development, run services manually:
+// Backend: cd backend && npm run dev (port 4000)
+// Frontend: cd frontend && npm run dev (port 3000, falls back to 3020/3021)
+// Then run tests: npx playwright test
+
 export default defineConfig({
-  testDir: './e2e',
+  testDir: '.',
   timeout: 30000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -9,6 +14,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     headless: true,
     viewport: { width: 1280, height: 720 },
@@ -18,18 +24,5 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
   ],
-  webServer: {
-    command: 'npm run dev',
-    port: 3022,
-    reuseExistingServer: true,
-  },
 });

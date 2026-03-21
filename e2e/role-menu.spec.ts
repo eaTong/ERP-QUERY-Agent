@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 
 test.describe('角色管理 - 分配菜单功能', () => {
   test.beforeEach(async ({ page }) => {
-    const baseUrl = 'http://localhost:3022';
-
     // 监听控制台错误
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -12,7 +10,7 @@ test.describe('角色管理 - 分配菜单功能', () => {
     });
 
     // 登录
-    await page.goto(`${baseUrl}/login`);
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000); // 等待 React 渲染
 
@@ -28,7 +26,7 @@ test.describe('角色管理 - 分配菜单功能', () => {
     console.log('✓ 登录成功');
 
     // 导航到角色管理页面
-    await page.goto(`${baseUrl}/admin/roles`);
+    await page.goto('/admin/roles');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000); // 等待页面完全渲染
     console.log('✓ 进入角色管理页面');

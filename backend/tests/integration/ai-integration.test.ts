@@ -7,6 +7,7 @@
 
 import { AIService } from '../../src/services/ai';
 import prisma from '../../src/models';
+import { decrypt } from '../../src/utils/encryption';
 
 describe('AI Service Integration Tests', () => {
   let aiService: AIService;
@@ -87,7 +88,7 @@ describe('AI Service Integration Tests', () => {
       const ds = dataSources[0];
 
       // Decrypt password (simplified - uses the actual decrypt method)
-      const decryptedPassword = (aiService as any).decryptPassword(ds.password);
+      const decryptedPassword = decrypt(ds.password);
 
       const mssql = require('mssql');
 
@@ -155,6 +156,7 @@ describe('AI Service Integration Tests', () => {
           description: pr.description || undefined,
           content: pr.content,
         })),
+        userPromptRules: [],
       };
 
       expect(context.tables.length).toBeGreaterThan(0);
@@ -195,6 +197,7 @@ describe('AI Service Integration Tests', () => {
           })),
         })),
         promptRules: [],
+        userPromptRules: [],
       };
 
       const userQuery = '查询所有客户信息';
