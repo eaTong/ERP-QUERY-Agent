@@ -130,8 +130,8 @@ model FieldMapping {
 model PromptRule {
   id          String   @id @default(uuid())
   name        String   @unique
-  description String?
-  content     String
+  description String?  @db.VarChar(500)
+  content     String   @db.VarChar(2000)
   enabled     Int      @default(1)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
