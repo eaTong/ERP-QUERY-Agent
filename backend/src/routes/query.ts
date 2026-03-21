@@ -8,5 +8,6 @@ const controller = new QueryController();
 router.use(requireAuth);
 router.post('/', controller.query);
 router.get('/history', controller.getHistory);
+router.post('/analyze', controller.analyze);
 
 export { router as queryRouter };

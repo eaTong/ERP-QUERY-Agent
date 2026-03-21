@@ -204,9 +204,9 @@ export class AIService {
 
       generatedSQL = response.data.choices?.[0]?.message?.content?.trim() || '';
 
-// MiniMax 返回格式中可能包含<think>...</think> 标签，需要提取标签后的实际内容
-      const thinkOpenTag = '[THINK_START]';
-      const thinkCloseTag = '[THINK_END]';
+      // MiniMax 返回格式中可能包含<think>...</think> 标签，需要提取标签后的实际内容
+      const thinkOpenTag = '<think>';
+      const thinkCloseTag = '</think>';
       const thinkOpenIndex = generatedSQL.indexOf(thinkOpenTag);
       const thinkCloseIndex = generatedSQL.indexOf(thinkCloseTag);
       if (thinkOpenIndex !== -1 && thinkCloseIndex !== -1 && thinkCloseIndex > thinkOpenIndex) {
@@ -329,6 +329,69 @@ export class AIService {
       columns,
       thinkProcess,
     };
+  }
+
+  async analyze(params: {
+    query: string;
+    result: Record<string, unknown>[];
+    thinkProcess: string;
+    tables: string[];
+  }): Promise<{ analysis: string }> {
+    const { query, result, thinkProcess, tables } = params;
+
+    // 构建分析提示词
+    const analysisPrompt = `你是一个数据分析专家。用户刚刚执行了一个AI查询，请分析查询结果并提供见解。
+
+## 用户原始查询
+${query}
+
+## AI 思考过程
+${thinkProcess || '无'}
+
+## 涉及的表
+${tables.join(', ')}
+
+## 查询结果
+${JSON.stringify(result, null, 2)}
+
+请分析以上查询结果，提供：
+1. 数据的主要特征和趋势
+2. 可能的业务含义
+3. 任何值得注意的发现
+4. 建议（如有）
+
+请用简洁的中文回答。`;
+
+    try {
+      const response = await axios.post(
+        MINI_MAX_API_URL,
+        {
+          model: MINI_MAX_MODEL,
+          messages: [
+            {
+              role: 'user',
+              content: analysisPrompt,
+            },
+          ],
+          max_tokens: 2048,
+          temperature: 0.3,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${MINI_MAX_API_KEY}`,
+          },
+          timeout: 60000,
+        }
+      );
+
+      const analysis = response.data.choices?.[0]?.message?.content?.trim() || '分析失败';
+
+      return { analysis };
+    } catch (error: any) {
+      console.error('MiniMax API error:', error.message);
+      throw new Error(`AI分析失败: ${error.message}`);
+    }
   }
 
 }

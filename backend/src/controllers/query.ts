@@ -46,6 +46,33 @@ export class QueryController {
       res.status(500).json({ error: '获取查询历史失败' });
     }
   }
+
+  async analyze(req: Request, res: Response) {
+    try {
+      const { query, result, thinkProcess, tables } = req.body;
+
+      if (!query || !result) {
+        res.status(400).json({ error: '查询内容和结果不能为空' });
+        return;
+      }
+
+      logger.info(`AI Analyze request: ${query}`);
+
+      const analysisResult = await aiService.analyze({
+        query,
+        result,
+        thinkProcess: thinkProcess || '',
+        tables: tables || [],
+      });
+
+      logger.info(`AI Analyze success`);
+
+      res.json(analysisResult);
+    } catch (error: any) {
+      logger.error('AI Analyze error:', error);
+      res.status(500).json({ error: error.message || '分析失败' });
+    }
+  }
 }
 
 export const queryController = new QueryController();
