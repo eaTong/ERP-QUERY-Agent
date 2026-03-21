@@ -144,8 +144,8 @@ model QueryHistory {
   id        String   @id @default(uuid())
   userId    String
   query     String
-  sql       String?
-  tables    String?
+  sql       String?  @db.VarChar(2000)
+  tables    String?  @db.VarChar(500)
   status    Int      @default(1)  // 1: 成功, 0: 失败
   createdAt DateTime @default(now())
 

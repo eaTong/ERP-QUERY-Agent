@@ -74,8 +74,8 @@ export const dataSourceApi = {
   },
 
   getTables: async (id: string): Promise<string[]> => {
-    const response = await apiClient.get<string[]>(`/data-sources/${id}/tables`);
-    return response.data;
+    const response = await apiClient.get<{ tables: string[] }>(`/data-sources/${id}/tables`);
+    return response.data.tables;
   },
 
   getTableFields: async (id: string, tableName: string): Promise<any[]> => {

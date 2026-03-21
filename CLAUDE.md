@@ -14,6 +14,13 @@ ERP 查询智能体 (ERP Query Agent) - A system that enables users to query ERP
 
 ## Common Commands
 
+### Quick Start (Both Services)
+```bash
+npm run dev              # Start both backend (4000) and frontend (3000) simultaneously
+npm run dev:backend      # Start backend only
+npm run dev:frontend     # Start frontend only
+```
+
 ### Backend
 ```bash
 cd backend
@@ -105,3 +112,9 @@ e2e/
 - Table/Field mappings allow connecting external ERP databases with local semantic aliases
 - Prompt rules define system prompts for AI query interpretation
 - Role-menu assignments use tree structure for hierarchical permissions
+
+## Development Rules
+
+- **不自动启动服务**: 禁止自动启动 `npm run dev` 或任何前端/后端服务
+- **不询问启动**: 不询问用户是否需要启动服务
+- **自行管理**: 代码修改完成后，由用户自行手动停止和启动服务

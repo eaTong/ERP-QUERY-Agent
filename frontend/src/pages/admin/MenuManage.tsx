@@ -1,8 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Tree, Button, Modal, Form, Input, Select, message, Space, Spin, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, DashboardOutlined,
+  SettingOutlined, DatabaseOutlined, FileTextOutlined, BarChartOutlined,
+  TeamOutlined, LockOutlined, SafetyOutlined, MenuOutlined, HomeOutlined,
+  AppstoreOutlined, AccountBookOutlined, ContainerOutlined, TableOutlined,
+  FolderOutlined, MailOutlined, BellOutlined, SearchOutlined, ReloadOutlined,
+  PlusCircleOutlined, MinusCircleOutlined, RightCircleOutlined, LeftCircleOutlined,
+  UpCircleOutlined, DownCircleOutlined, CheckCircleOutlined, CloseCircleOutlined,
+} from '@ant-design/icons';
 import type { DataNode } from 'antd/es/tree';
 import { menuApi, Menu } from '../../services/user';
+
+// 图标名称映射
+const iconMap: Record<string, React.ReactNode> = {
+  UserOutlined, DashboardOutlined, SettingOutlined, DatabaseOutlined,
+  FileTextOutlined, BarChartOutlined, TeamOutlined, LockOutlined,
+  SafetyOutlined, MenuOutlined, HomeOutlined, AppstoreOutlined,
+  AccountBookOutlined, ContainerOutlined, TableOutlined, FolderOutlined,
+  MailOutlined, BellOutlined, SearchOutlined, ReloadOutlined,
+  PlusCircleOutlined, MinusCircleOutlined, RightCircleOutlined, LeftCircleOutlined,
+  UpCircleOutlined, DownCircleOutlined, CheckCircleOutlined, CloseCircleOutlined,
+};
 
 export default function MenuManage() {
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -35,7 +54,7 @@ export default function MenuManage() {
       title: (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span>
-            {menu.icon && <span style={{ marginRight: 8 }}>{menu.icon}</span>}
+            {menu.icon && <span style={{ marginRight: 8 }}>{iconMap[menu.icon] || menu.icon}</span>}
             {menu.name}
             {menu.status === 0 && <Tag color="red" style={{ marginLeft: 8 }}>禁用</Tag>}
           </span>

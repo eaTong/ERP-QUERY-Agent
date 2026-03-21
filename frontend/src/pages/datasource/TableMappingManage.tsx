@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag, Switch, InputNumber, Divider } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, CheckOutlined, CloseOutlined, CheckSquareOutlined, BorderOutlined } from '@ant-design/icons';
 import { tableMappingApi, dataSourceApi, fieldMappingApi, TableMapping, DataSource, FieldMapping } from '../../services/datasource';
 
 export default function TableMappingManage() {
@@ -14,11 +14,12 @@ export default function TableMappingManage() {
   const [tableFields, setTableFields] = useState<any[]>([]);
   const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [form] = Form.useForm();
-  const [fieldForm] = Form.useForm();
   const [syncingTables, setSyncingTables] = useState(false);
   const [syncingFields, setSyncingFields] = useState(false);
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [editingFieldValues, setEditingFieldValues] = useState<Partial<FieldMapping>>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [batchDisplayRules, setBatchDisplayRules] = useState('');
 
   const fetchTableMappings = async () => {
     setLoading(true);
@@ -50,8 +51,9 @@ export default function TableMappingManage() {
     setSyncingTables(true);
     try {
       const tables = await dataSourceApi.getTables(dataSourceId);
-      setAvailableTables(tables);
-      message.success(`获取到 ${tables.length} 个表`);
+      const tableList = Array.isArray(tables) ? tables : [];
+      setAvailableTables(tableList);
+      message.success(`获取到 ${tableList.length} 个表`);
     } catch (error) {
       message.error('获取表列表失败');
     } finally {
@@ -117,34 +119,6 @@ export default function TableMappingManage() {
     setFieldModalVisible(true);
   };
 
-  const handleAddField = async () => {
-    if (!selectedMapping) return;
-    try {
-      const values = await fieldForm.validateFields();
-      await fieldMappingApi.create(selectedMapping.id, values);
-      message.success('字段映射创建成功');
-      const fields = await fieldMappingApi.listByTable(selectedMapping.id);
-      setTableFields(fields);
-      fieldForm.resetFields();
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.error || '操作失败';
-      message.error(errorMsg);
-    }
-  };
-
-  const handleDeleteField = async (id: string) => {
-    try {
-      await fieldMappingApi.delete(id);
-      message.success('删除成功');
-      if (selectedMapping) {
-        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
-        setTableFields(fields);
-      }
-    } catch (error) {
-      message.error('删除失败');
-    }
-  };
-
   const handleEditField = (field: FieldMapping) => {
     setEditingFieldId(field.id);
     setEditingFieldValues({ localAlias: field.localAlias, enabled: field.enabled });
@@ -168,6 +142,74 @@ export default function TableMappingManage() {
   const handleCancelEdit = () => {
     setEditingFieldId(null);
     setEditingFieldValues({});
+  };
+
+  const handleBatchEnable = async (enabled: number) => {
+    if (selectedRowKeys.length === 0) return;
+    try {
+      await Promise.all(selectedRowKeys.map(id => fieldMappingApi.update(id as string, { enabled })));
+      message.success(`已${enabled === 1 ? '启用' : '禁用'} ${selectedRowKeys.length} 个字段`);
+      setSelectedRowKeys([]);
+      if (selectedMapping) {
+        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
+        setTableFields(fields);
+      }
+    } catch (error) {
+      message.error('批量更新失败');
+    }
+  };
+
+  const handleBatchSetDisplayRules = async () => {
+    if (selectedRowKeys.length === 0) return;
+    try {
+      await Promise.all(selectedRowKeys.map(id => fieldMappingApi.update(id as string, { displayRules: batchDisplayRules })));
+      message.success(`已设置 ${selectedRowKeys.length} 个字段的显示规则`);
+      setBatchDisplayRules('');
+      setSelectedRowKeys([]);
+      if (selectedMapping) {
+        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
+        setTableFields(fields);
+      }
+    } catch (error) {
+      message.error('批量更新失败');
+    }
+  };
+
+  const handleBatchAutoAlias = async () => {
+    if (selectedRowKeys.length === 0) return;
+    try {
+      const updates = selectedRowKeys.map(id => {
+        const field = tableFields.find(f => f.id === id);
+        if (!field) return { id, localAlias: '' };
+        // 将下划线命名转为驼峰命名
+        const alias = field.externalFieldName.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        return { id: id as string, localAlias: alias };
+      });
+      await Promise.all(updates.map(u => fieldMappingApi.update(u.id, { localAlias: u.localAlias })));
+      message.success(`已自动生成 ${selectedRowKeys.length} 个字段的本地别名`);
+      setSelectedRowKeys([]);
+      if (selectedMapping) {
+        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
+        setTableFields(fields);
+      }
+    } catch (error) {
+      message.error('批量更新失败');
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) return;
+    try {
+      await Promise.all(selectedRowKeys.map(id => fieldMappingApi.delete(id as string)));
+      message.success(`已删除 ${selectedRowKeys.length} 个字段`);
+      setSelectedRowKeys([]);
+      if (selectedMapping) {
+        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
+        setTableFields(fields);
+      }
+    } catch (error) {
+      message.error('批量删除失败');
+    }
   };
 
   const handleSubmit = async () => {
@@ -224,12 +266,13 @@ export default function TableMappingManage() {
   ];
 
   const fieldColumns = [
-    { title: '外部字段名', dataIndex: 'externalFieldName', key: 'externalFieldName', width: 150 },
+    { title: '外部字段名', dataIndex: 'externalFieldName', key: 'externalFieldName', width: 120, ellipsis: true },
     {
       title: '本地别名',
       dataIndex: 'localAlias',
       key: 'localAlias',
-      width: 150,
+      width: 120,
+      ellipsis: true,
       render: (localAlias: string, record: FieldMapping) =>
         editingFieldId === record.id ? (
           <Input
@@ -239,11 +282,47 @@ export default function TableMappingManage() {
             style={{ width: 100 }}
           />
         ) : (
-          localAlias
+          <span
+            onClick={() => {
+              setEditingFieldId(record.id);
+              setEditingFieldValues({ localAlias: record.localAlias, enabled: record.enabled, displayRules: record.displayRules });
+            }}
+            style={{ cursor: 'pointer' }}
+            title={localAlias}
+          >
+            {localAlias}
+          </span>
         ),
     },
-    { title: '字段描述', dataIndex: 'fieldDescription', key: 'fieldDescription', width: 150 },
-    { title: '显示规则', dataIndex: 'displayRules', key: 'displayRules', width: 150 },
+    { title: '字段描述', dataIndex: 'fieldDescription', key: 'fieldDescription', width: 120, ellipsis: true },
+    {
+      title: '显示规则',
+      dataIndex: 'displayRules',
+      key: 'displayRules',
+      width: 180,
+      ellipsis: true,
+      render: (displayRules: string, record: FieldMapping) =>
+        editingFieldId === record.id ? (
+          <Input.TextArea
+            value={editingFieldValues.displayRules}
+            onChange={(e) => setEditingFieldValues({ ...editingFieldValues, displayRules: e.target.value })}
+            size="small"
+            autoSize={{ minRows: 1, maxRows: 3 }}
+            placeholder='{"0":"保存","1":"提交"}'
+          />
+        ) : (
+          <span
+            onClick={() => {
+              setEditingFieldId(record.id);
+              setEditingFieldValues({ localAlias: record.localAlias, enabled: record.enabled, displayRules: record.displayRules });
+            }}
+            style={{ cursor: 'pointer', display: 'block' }}
+            title={displayRules}
+          >
+            {displayRules || '-'}
+          </span>
+        ),
+    },
     {
       title: '状态',
       dataIndex: 'enabled',
@@ -259,34 +338,30 @@ export default function TableMappingManage() {
             size="small"
           />
         ) : (
-          <Tag color={enabled === 1 ? 'green' : 'red'}>{enabled === 1 ? '启用' : '禁用'}</Tag>
+          <Tag
+            color={enabled === 1 ? 'green' : 'red'}
+            onClick={() => {
+              setEditingFieldId(record.id);
+              setEditingFieldValues({ localAlias: record.localAlias, enabled: record.enabled, displayRules: record.displayRules });
+            }}
+            style={{ cursor: 'pointer' }}
+          >
+            {enabled === 1 ? '启用' : '禁用'}
+          </Tag>
         ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 120,
       render: (_: any, record: FieldMapping) =>
         editingFieldId === record.id ? (
-          <Space>
-            <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => handleSaveField(record.id)}>
-              保存
-            </Button>
-            <Button size="small" icon={<CloseOutlined />} onClick={handleCancelEdit}>
-              取消
-            </Button>
+          <Space size={4}>
+            <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => handleSaveField(record.id)} />
+            <Button size="small" icon={<CloseOutlined />} onClick={handleCancelEdit} />
           </Space>
         ) : (
-          <Space>
-            <Button size="small" icon={<EditOutlined />} onClick={() => handleEditField(record)}>
-              编辑
-            </Button>
-            <Popconfirm title="确认删除?" onConfirm={() => handleDeleteField(record.id)}>
-              <Button size="small" danger icon={<DeleteOutlined />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </Space>
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleEditField(record)} />
         ),
     },
   ];
@@ -392,11 +467,12 @@ export default function TableMappingManage() {
           setFieldModalVisible(false);
           setSelectedMapping(null);
           setTableFields([]);
+          setSelectedRowKeys([]);
         }}
         footer={null}
-        width={800}
+        width={900}
       >
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
           <Button
             type="primary"
             onClick={() => selectedMapping?.dataSource && handleSyncFields(selectedMapping)}
@@ -407,27 +483,42 @@ export default function TableMappingManage() {
           </Button>
         </div>
 
-        <Form form={fieldForm} layout="inline" style={{ marginBottom: 16 }}>
-          <Form.Item name="externalFieldName" label="外部字段" rules={[{ required: true }]}>
-            <Input placeholder="外部数据库字段名" />
-          </Form.Item>
-          <Form.Item name="localAlias" label="本地别名" rules={[{ required: true }]}>
-            <Input placeholder="本地使用的别名" />
-          </Form.Item>
-          <Form.Item name="fieldDescription" label="描述">
-            <Input placeholder="字段描述" />
-          </Form.Item>
-          <Form.Item name="displayRules" label="显示规则">
-            <Input placeholder='如: {"0":"保存","1":"提交"}' />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" onClick={handleAddField}>
-              添加
-            </Button>
-          </Form.Item>
-        </Form>
+        {selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16, padding: 12, background: '#f0f5ff', borderRadius: 4 }}>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>
+              已选择 {selectedRowKeys.length} 个字段，批量操作：
+            </div>
+            <Space wrap>
+              <Button size="small" onClick={() => handleBatchEnable(1)}>启用</Button>
+              <Button size="small" onClick={() => handleBatchEnable(0)}>禁用</Button>
+              <Divider type="vertical" />
+              <Input
+                size="small"
+                placeholder="显示规则 JSON"
+                value={batchDisplayRules}
+                onChange={(e) => setBatchDisplayRules(e.target.value)}
+                style={{ width: 200 }}
+              />
+              <Button size="small" type="primary" onClick={handleBatchSetDisplayRules}>应用显示规则</Button>
+              <Divider type="vertical" />
+              <Button size="small" onClick={handleBatchAutoAlias}>自动生成别名</Button>
+              <Popconfirm title="确认删除所选字段？" onConfirm={handleBatchDelete}>
+                <Button size="small" danger>删除所选</Button>
+              </Popconfirm>
+            </Space>
+          </div>
+        )}
 
-        <Table columns={fieldColumns} dataSource={tableFields} rowKey="id" size="small" />
+        <Table
+          columns={fieldColumns}
+          dataSource={tableFields}
+          rowKey="id"
+          size="small"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
+        />
       </Modal>
     </div>
   );
