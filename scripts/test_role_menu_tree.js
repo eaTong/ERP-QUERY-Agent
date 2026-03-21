@@ -5,7 +5,7 @@
 
 const { chromium } = require('playwright');
 
-const BASE_URL = 'http://localhost:3020';
+const BASE_URL = 'http://localhost:3000';
 
 async function main() {
   console.log('Testing Role Menu Tree Dropdown...\n');

@@ -2,18 +2,18 @@
  * ERP Query Agent - Playwright E2E Test Suite
  *
  * Usage:
- *   1. Ensure frontend is running on port 3020
+ *   1. Ensure frontend is running on port 3000
  *   2. Run: npx playwright test e2e/test_suite.js
  *
  * Or use with server manager:
  *   python scripts/with_server.py \
- *     --server "cd frontend && npm run dev" --port 3020 \
+ *     --server "cd frontend && npm run dev" --port 3000 \
  *     -- npx playwright test e2e/test_suite.js
  */
 
 const { chromium } = require('playwright');
 
-const BASE_URL = 'http://localhost:3020';
+const BASE_URL = 'http://localhost:3000';
 const TEST_USER = { username: 'admin', password: 'admin123' };
 
 // Helper: Login

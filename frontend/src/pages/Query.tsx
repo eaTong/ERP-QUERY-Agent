@@ -73,11 +73,13 @@ function Query() {
     }
   };
 
-  const columns: ColumnsType<any> = currentResult?.columns.map((col) => ({
+  const columns: ColumnsType<any> = currentResult?.columns.map((col, index) => ({
     title: col,
     dataIndex: col,
     key: col,
     ellipsis: true,
+    fixed: index === 0 ? 'left' : undefined,
+    width: 120,
   })) || [];
 
   return (
@@ -150,7 +152,7 @@ function Query() {
                     columns={columns}
                     rowKey={(_, index) => index?.toString() || '0'}
                     pagination={{ pageSize: 20, showSizeChanger: true }}
-                    scroll={{ x: 'max-content' }}
+                    scroll={{ x: 'max-content', y: 400 }}
                     size="small"
                   />
                 ) : (

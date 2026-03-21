@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag, Switch } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { tableMappingApi, dataSourceApi, fieldMappingApi, TableMapping, DataSource, FieldMapping } from '../../services/datasource';
 
 export default function TableMappingManage() {
@@ -17,6 +17,8 @@ export default function TableMappingManage() {
   const [fieldForm] = Form.useForm();
   const [syncingTables, setSyncingTables] = useState(false);
   const [syncingFields, setSyncingFields] = useState(false);
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [editingFieldValues, setEditingFieldValues] = useState<Partial<FieldMapping>>({});
 
   const fetchTableMappings = async () => {
     setLoading(true);
@@ -58,14 +60,18 @@ export default function TableMappingManage() {
   };
 
   const handleSyncFields = async (mapping: TableMapping) => {
-    if (!mapping.dataSource) return;
     setSyncingFields(true);
     try {
-      const fields = await dataSourceApi.getTableFields(mapping.dataSource.id, mapping.externalTableName);
+      const result = await fieldMappingApi.syncFields(mapping.id);
+      if (result.success) {
+        message.success(`同步成功: 创建了 ${result.created}/${result.total} 个字段映射`);
+      } else {
+        message.warning(`同步完成但有错误: ${result.errors.join(', ')}`);
+      }
+      const fields = await fieldMappingApi.listByTable(mapping.id);
       setTableFields(fields);
-      message.success(`获取到 ${fields.length} 个字段`);
     } catch (error) {
-      message.error('获取字段列表失败');
+      message.error('同步字段映射失败');
     } finally {
       setSyncingFields(false);
     }
@@ -139,6 +145,31 @@ export default function TableMappingManage() {
     }
   };
 
+  const handleEditField = (field: FieldMapping) => {
+    setEditingFieldId(field.id);
+    setEditingFieldValues({ localAlias: field.localAlias, enabled: field.enabled });
+  };
+
+  const handleSaveField = async (id: string) => {
+    try {
+      await fieldMappingApi.update(id, editingFieldValues);
+      message.success('更新成功');
+      setEditingFieldId(null);
+      setEditingFieldValues({});
+      if (selectedMapping) {
+        const fields = await fieldMappingApi.listByTable(selectedMapping.id);
+        setTableFields(fields);
+      }
+    } catch (error) {
+      message.error('更新失败');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingFieldId(null);
+    setEditingFieldValues({});
+  };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -193,28 +224,70 @@ export default function TableMappingManage() {
   ];
 
   const fieldColumns = [
-    { title: '外部字段名', dataIndex: 'externalFieldName', key: 'externalFieldName' },
-    { title: '本地别名', dataIndex: 'localAlias', key: 'localAlias' },
-    { title: '字段描述', dataIndex: 'fieldDescription', key: 'fieldDescription' },
-    { title: '显示规则', dataIndex: 'displayRules', key: 'displayRules' },
+    { title: '外部字段名', dataIndex: 'externalFieldName', key: 'externalFieldName', width: 150 },
+    {
+      title: '本地别名',
+      dataIndex: 'localAlias',
+      key: 'localAlias',
+      width: 150,
+      render: (localAlias: string, record: FieldMapping) =>
+        editingFieldId === record.id ? (
+          <Input
+            value={editingFieldValues.localAlias}
+            onChange={(e) => setEditingFieldValues({ ...editingFieldValues, localAlias: e.target.value })}
+            size="small"
+            style={{ width: 100 }}
+          />
+        ) : (
+          localAlias
+        ),
+    },
+    { title: '字段描述', dataIndex: 'fieldDescription', key: 'fieldDescription', width: 150 },
+    { title: '显示规则', dataIndex: 'displayRules', key: 'displayRules', width: 150 },
     {
       title: '状态',
       dataIndex: 'enabled',
       key: 'enabled',
-      render: (enabled: number) => (
-        <Tag color={enabled === 1 ? 'green' : 'red'}>{enabled === 1 ? '启用' : '禁用'}</Tag>
-      ),
+      width: 100,
+      render: (enabled: number, record: FieldMapping) =>
+        editingFieldId === record.id ? (
+          <Switch
+            checked={editingFieldValues.enabled === 1}
+            onChange={(checked) => setEditingFieldValues({ ...editingFieldValues, enabled: checked ? 1 : 0 })}
+            checkedChildren="启"
+            unCheckedChildren="禁"
+            size="small"
+          />
+        ) : (
+          <Tag color={enabled === 1 ? 'green' : 'red'}>{enabled === 1 ? '启用' : '禁用'}</Tag>
+        ),
     },
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: FieldMapping) => (
-        <Popconfirm title="确认删除?" onConfirm={() => handleDeleteField(record.id)}>
-          <Button size="small" danger icon={<DeleteOutlined />}>
-            删除
-          </Button>
-        </Popconfirm>
-      ),
+      width: 150,
+      render: (_: any, record: FieldMapping) =>
+        editingFieldId === record.id ? (
+          <Space>
+            <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => handleSaveField(record.id)}>
+              保存
+            </Button>
+            <Button size="small" icon={<CloseOutlined />} onClick={handleCancelEdit}>
+              取消
+            </Button>
+          </Space>
+        ) : (
+          <Space>
+            <Button size="small" icon={<EditOutlined />} onClick={() => handleEditField(record)}>
+              编辑
+            </Button>
+            <Popconfirm title="确认删除?" onConfirm={() => handleDeleteField(record.id)}>
+              <Button size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
     },
   ];
 

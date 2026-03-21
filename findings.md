@@ -440,7 +440,7 @@ npx playwright test tests/role-menu.spec.ts
 
 **测试路由：** `/admin/roles` (不是 `/roles`)
 
-**前端端口：** Vite 自动选择（3000/3020/3021/3022）
+**前端端口：** Vite 自动选择（3000）
 
 ---
 

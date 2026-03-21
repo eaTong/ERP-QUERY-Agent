@@ -130,6 +130,11 @@ export const fieldMappingApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/field-mappings/${id}`);
   },
+
+  syncFields: async (tableMappingId: string): Promise<{ success: boolean; total: number; created: number; errors: string[] }> => {
+    const response = await apiClient.post<{ success: boolean; total: number; created: number; errors: string[] }>(`/field-mappings/table/${tableMappingId}/sync`);
+    return response.data;
+  },
 };
 
 export const promptRuleApi = {
