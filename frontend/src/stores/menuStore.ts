@@ -16,6 +16,12 @@ interface MenuState {
   clearMenus: () => void;
 }
 
+// Selectors
+export const selectMenus = (state: MenuState) => state.menus;
+export const selectIsMenuLoading = (state: MenuState) => state.isLoading;
+export const selectMenuById = (id: string) => (state: MenuState) =>
+  state.menus.find((menu) => menu.id === id);
+
 export const useMenuStore = create<MenuState>((set) => ({
   menus: [],
   isLoading: false,

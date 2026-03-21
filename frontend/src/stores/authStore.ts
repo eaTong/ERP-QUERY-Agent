@@ -11,6 +11,11 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
+// Selectors
+export const selectUser = (state: AuthState) => state.user;
+export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
+export const selectIsLoading = (state: AuthState) => state.isLoading;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({

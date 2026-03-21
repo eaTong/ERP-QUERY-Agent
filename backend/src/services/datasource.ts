@@ -1,29 +1,8 @@
 import prisma from '../models';
+import { encrypt, decrypt } from '../utils/encryption';
+import { createMySqlConnection, createSqlServerConnection, closeMySqlConnection, closeSqlServerConnection, DataSourceConfig } from '../utils/database';
 import mysql from 'mysql2/promise';
 import mssql from 'mssql';
-import crypto from 'crypto';
-
-// 加密密码
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'erp_query_agent_encrypt';
-
-function encrypt(text: string): string {
-  const iv = crypto.randomBytes(16);
-  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return iv.toString('hex') + ':' + encrypted;
-}
-
-function decrypt(text: string): string {
-  const [ivHex, encryptedHex] = text.split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
 
 export class DataSourceService {
   async findAll() {
@@ -81,7 +60,7 @@ export class DataSourceService {
       status?: number;
     }
   ) {
-    const updateData: any = { ...data };
+    const updateData: Record<string, unknown> = { ...data };
     if (data.password) {
       updateData.password = encrypt(data.password);
     }
@@ -111,133 +90,116 @@ export class DataSourceService {
 
     try {
       if (dataSource.type === 'mysql') {
-        const connection = await mysql.createConnection({
+        const conn = await createMySqlConnection({
           host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
+          type: 'mysql',
         });
-        await connection.end();
+        await closeMySqlConnection(conn);
         return { success: true, message: '连接成功' };
-      } else if (dataSource.type === 'sqlserver') {
-        const config = {
-          server: dataSource.host,
+      } else {
+        const conn = await createSqlServerConnection({
+          host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
-          options: {
-            encrypt: false,
-            trustServerCertificate: true,
-          },
-        };
-        const pool = await mssql.connect(config);
-        await pool.close();
+          type: 'sqlserver',
+        });
+        await closeSqlServerConnection(conn);
         return { success: true, message: '连接成功' };
       }
-
-      return { success: false, message: '不支持的数据库类型' };
     } catch (error: any) {
       return { success: false, message: `连接失败: ${error.message}` };
     }
   }
 
-  async getTables(id: string): Promise<string[]> {
+  async getTables(id: string): Promise<{ tables: string[]; error?: string }> {
     const dataSource = await prisma.dataSource.findUnique({
       where: { id },
     });
 
     if (!dataSource) {
-      throw new Error('数据源不存在');
+      return { tables: [], error: '数据源不存在' };
     }
 
     const password = decrypt(dataSource.password);
 
     try {
       if (dataSource.type === 'mysql') {
-        const connection = await mysql.createConnection({
+        const conn = await createMySqlConnection({
           host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
+          type: 'mysql',
         });
-        const [rows] = await connection.query('SHOW TABLES');
-        await connection.end();
-        return (rows as any[]).map((row: any) => Object.values(row)[0] as string);
-      } else if (dataSource.type === 'sqlserver') {
-        const config = {
-          server: dataSource.host,
+        const [rows] = await conn.query('SHOW TABLES');
+        await closeMySqlConnection(conn);
+        return { tables: (rows as Record<string, unknown>[]).map((row) => Object.values(row)[0] as string) };
+      } else {
+        const conn = await createSqlServerConnection({
+          host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
-          options: {
-            encrypt: false,
-            trustServerCertificate: true,
-          },
-        };
-        const pool = await mssql.connect(config);
-        const result = await pool.query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'");
-        await pool.close();
-        return result.recordset.map((row: any) => row.TABLE_NAME);
+          type: 'sqlserver',
+        });
+        const result = await conn.query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'");
+        await closeSqlServerConnection(conn);
+        return { tables: result.recordset.map((row: Record<string, unknown>) => row.TABLE_NAME as string) };
       }
-
-      return [];
-    } catch (error) {
-      console.error('Error getting tables:', error);
-      return [];
+    } catch (error: any) {
+      return { tables: [], error: `获取表列表失败: ${error.message}` };
     }
   }
 
-  async getTableFields(id: string, tableName: string): Promise<any[]> {
+  async getTableFields(id: string, tableName: string): Promise<{ fields: Record<string, unknown>[]; error?: string }> {
     const dataSource = await prisma.dataSource.findUnique({
       where: { id },
     });
 
     if (!dataSource) {
-      throw new Error('数据源不存在');
+      return { fields: [], error: '数据源不存在' };
     }
 
     const password = decrypt(dataSource.password);
 
     try {
       if (dataSource.type === 'mysql') {
-        const connection = await mysql.createConnection({
+        const conn = await createMySqlConnection({
           host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
+          type: 'mysql',
         });
-        const [rows] = await connection.query(`DESCRIBE \`${tableName}\``);
-        await connection.end();
-        return rows as any[];
-      } else if (dataSource.type === 'sqlserver') {
-        const config = {
-          server: dataSource.host,
+        const [rows] = await conn.query('DESCRIBE ??', [tableName]);
+        await closeMySqlConnection(conn);
+        return { fields: rows as Record<string, unknown>[] };
+      } else {
+        const conn = await createSqlServerConnection({
+          host: dataSource.host,
           port: dataSource.port,
           user: dataSource.username,
           password: password,
           database: dataSource.database,
-          options: {
-            encrypt: false,
-            trustServerCertificate: true,
-          },
-        };
-        const pool = await mssql.connect(config);
-        const result = await pool.query(
+          type: 'sqlserver',
+        });
+        const result = await conn.query(
           `SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tableName}'`
         );
-        await pool.close();
-        return result.recordset;
+        await closeSqlServerConnection(conn);
+        return { fields: result.recordset as Record<string, unknown>[] };
       }
-
-      return [];
-    } catch (error) {
-      console.error('Error getting table fields:', error);
-      return [];
+    } catch (error: any) {
+      return { fields: [], error: `获取字段信息失败: ${error.message}` };
     }
   }
 }

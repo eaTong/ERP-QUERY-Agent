@@ -1,13 +1,6 @@
 import prisma from '../models';
 import { dataSourceService } from './datasource';
 
-interface TableField {
-  COLUMN_NAME: string;
-  DATA_TYPE: string;
-  IS_NULLABLE: string;
-  COLUMN_KEY?: string;
-}
-
 export class FieldMappingService {
   async syncFieldsFromExternal(tableMappingId: string): Promise<{
     success: boolean;
@@ -30,17 +23,17 @@ export class FieldMappingService {
     }
 
     // 获取外部数据库的字段信息
-    const fields = await dataSourceService.getTableFields(
+    const fieldsResult = await dataSourceService.getTableFields(
       tableMapping.dataSource.id,
       tableMapping.externalTableName
     );
 
-    if (fields.length === 0) {
-      return { success: false, total: 0, created: 0, errors: ['未能获取到字段信息'] };
+    if (fieldsResult.error || fieldsResult.fields.length === 0) {
+      return { success: false, total: 0, created: 0, errors: [fieldsResult.error || '未能获取到字段信息'] };
     }
 
     const errors: string[] = [];
-    let created = 0;
+    const fields = fieldsResult.fields;
 
     // 获取已存在的字段映射
     const existingFields = await prisma.fieldMapping.findMany({
@@ -48,34 +41,33 @@ export class FieldMappingService {
     });
     const existingNames = new Set(existingFields.map(f => f.externalFieldName));
 
-    // 为每个字段创建映射记录
-    for (const field of fields) {
+    // 过滤出需要创建的字段
+    const fieldsToCreate = fields
+      .map((field: Record<string, unknown>) => {
+        const fieldName = (field.COLUMN_NAME || field.Field || field.name) as string;
+        const dataType = (field.DATA_TYPE || field.Type || field.data_type) as string;
+        return { fieldName, dataType };
+      })
+      .filter((f) => !existingNames.has(f.fieldName));
+
+    // 批量创建字段映射记录
+    if (fieldsToCreate.length > 0) {
       try {
-        const fieldName = (field as TableField).COLUMN_NAME || field.Field || field.name;
-
-        // 如果字段已存在，跳过
-        if (existingNames.has(fieldName)) {
-          continue;
-        }
-
-        // 生成描述
-        const dataType = (field as TableField).DATA_TYPE || field.Type || field.data_type || '';
-
-        await prisma.fieldMapping.create({
-          data: {
+        await prisma.fieldMapping.createMany({
+          data: fieldsToCreate.map((f) => ({
             tableMappingId,
-            externalFieldName: fieldName,
-            localAlias: fieldName, // 默认使用原始字段名
-            fieldDescription: `${fieldName} (${dataType})`,
+            externalFieldName: f.fieldName,
+            localAlias: f.fieldName,
+            fieldDescription: `${f.fieldName} (${f.dataType})`,
             enabled: 1,
-          },
+          })),
         });
-        created++;
       } catch (error: any) {
-        errors.push(`字段 ${field} 创建失败: ${error.message}`);
+        errors.push(`批量创建字段失败: ${error.message}`);
       }
     }
 
+    const created = fieldsToCreate.length;
     return {
       success: errors.length === 0,
       total: fields.length,

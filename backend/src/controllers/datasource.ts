@@ -109,8 +109,12 @@ export class DataSourceController {
   async getTables(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const tables = await dataSourceService.getTables(id);
-      res.json(tables);
+      const result = await dataSourceService.getTables(id);
+      if (result.error) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ tables: result.tables });
     } catch (error: any) {
       logger.error('Get tables error:', error);
       res.status(500).json({ error: error.message || '获取表列表失败' });
@@ -120,8 +124,12 @@ export class DataSourceController {
   async getTableFields(req: Request, res: Response) {
     try {
       const { id, tableName } = req.params;
-      const fields = await dataSourceService.getTableFields(id, decodeURIComponent(tableName));
-      res.json(fields);
+      const result = await dataSourceService.getTableFields(id, decodeURIComponent(tableName));
+      if (result.error) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ fields: result.fields });
     } catch (error: any) {
       logger.error('Get table fields error:', error);
       res.status(500).json({ error: error.message || '获取字段列表失败' });

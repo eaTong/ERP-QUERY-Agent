@@ -1,6 +1,9 @@
 import axios from 'axios';
 import prisma from '../models';
-import crypto from 'crypto';
+import mysql from 'mysql2/promise';
+import mssql from 'mssql';
+import { decrypt } from '../utils/encryption';
+import { createMySqlConnection, createSqlServerConnection, closeMySqlConnection, closeSqlServerConnection } from '../utils/database';
 
 // MiniMax API配置 (使用新版 OpenAI 兼容格式)
 const MINI_MAX_API_KEY = process.env.AI_API_KEY || process.env.MINI_MAX_API_KEY || '';
@@ -209,41 +212,36 @@ export class AIService {
     }
 
     // 7. 解密密码并执行查询
-    const password = this.decryptPassword(targetDataSource.password);
+    const password = decrypt(targetDataSource.password);
 
-    let result: any[] = [];
+    let result: Record<string, unknown>[] = [];
     let columns: string[] = [];
 
     try {
       if (targetDataSource.type === 'mysql') {
-        const mysql = await import('mysql2/promise');
-        const connection = await mysql.createConnection({
+        const conn = await createMySqlConnection({
           host: targetDataSource.host,
           port: targetDataSource.port,
           user: targetDataSource.username,
           password: password,
           database: targetDataSource.database,
+          type: 'mysql',
         });
-        const [rows, fieldRows] = await connection.query(generatedSQL) as [any[], any];
-        await connection.end();
+        const [rows, fieldRows] = await conn.query(generatedSQL) as [Record<string, unknown>[], { name: string }[]];
+        await closeMySqlConnection(conn);
         result = rows;
-        columns = fieldRows ? fieldRows.map((f: any) => f.name) : (rows.length > 0 ? Object.keys(rows[0]) : []);
-      } else if (targetDataSource.type === 'sqlserver') {
-        const mssql = await import('mssql');
-        const config = {
-          server: targetDataSource.host,
+        columns = fieldRows ? fieldRows.map((f) => f.name) : (rows.length > 0 ? Object.keys(rows[0]) : []);
+      } else {
+        const conn = await createSqlServerConnection({
+          host: targetDataSource.host,
           port: targetDataSource.port,
           user: targetDataSource.username,
           password: password,
           database: targetDataSource.database,
-          options: {
-            encrypt: false,
-            trustServerCertificate: true,
-          },
-        };
-        const pool = await mssql.connect(config);
-        const queryResult = await pool.query(generatedSQL);
-        await pool.close();
+          type: 'sqlserver',
+        });
+        const queryResult = await conn.query(generatedSQL);
+        await closeSqlServerConnection(conn);
         result = queryResult.recordset || [];
         columns = queryResult.recordset?.length > 0 ? Object.keys(queryResult.recordset[0]) : [];
       }
@@ -292,23 +290,6 @@ export class AIService {
     };
   }
 
-  private decryptPassword(encrypted: string): string {
-    try {
-      const [ivHex, encryptedHex] = encrypted.split(':');
-      const iv = Buffer.from(ivHex, 'hex');
-      const key = crypto.scryptSync(
-        process.env.ENCRYPTION_KEY || 'erp_query_agent_encrypt',
-        'salt',
-        32
-      );
-      const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-      let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
-    } catch {
-      return encrypted; // 如果解密失败，假设是未加密的密码
-    }
-  }
 }
 
 export const aiService = new AIService();
