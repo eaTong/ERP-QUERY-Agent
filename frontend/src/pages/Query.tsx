@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer } from 'antd';
+import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer, Collapse } from 'antd';
 import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { queryApi } from '../services/api';
@@ -12,6 +12,7 @@ interface QueryResult {
   promptRules: string[];
   data: any[];
   columns: string[];
+  thinkProcess?: string;
 }
 
 interface QueryHistory {
@@ -145,6 +146,31 @@ function Query() {
                     返回 {currentResult.data.length} 条数据
                   </Tag>
                 </div>
+
+                {currentResult.thinkProcess && (
+                  <Collapse
+                    ghost
+                    style={{ marginBottom: '16px' }}
+                    items={[{
+                      key: 'think',
+                      label: 'AI 思考过程',
+                      children: (
+                        <pre style={{
+                          background: '#f5f5f5',
+                          padding: '12px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          maxHeight: '200px',
+                          overflow: 'auto',
+                        }}>
+                          {currentResult.thinkProcess}
+                        </pre>
+                      ),
+                    }]}
+                  />
+                )}
 
                 {currentResult.data.length > 0 ? (
                   <Table

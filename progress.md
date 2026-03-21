@@ -4,6 +4,8 @@
 
 ### 2026-03-21 (下午)
 
+### 2026-03-21 (下午) - 阶段 A 完成
+
 **阶段 A: 后端 - 提取 AI 思考过程**
 
 - [x] 修改 `backend/src/services/ai.ts` 提取 AI 思考过程
@@ -12,6 +14,16 @@
   - 将 `thinkProcess` 声明在方法作用域（try 块之前）以避免 TypeScript 作用域问题
   - 在返回类型和返回对象中添加 `thinkProcess` 字段
 - [x] 所有 21 个后端测试通过
+
+### 2026-03-21 (下午) - 阶段 B 完成
+
+**阶段 B: 前端 - 展示 AI 思考过程**
+
+- [x] 修改 `frontend/src/pages/Query.tsx` 展示 AI 思考过程
+  - 添加 Collapse 组件导入
+  - 在 QueryResult 接口添加 thinkProcess 可选字段
+  - 添加折叠面板显示 AI 思考过程
+- [x] TypeScript 类型检查通过（Query.tsx）
 
 ---
 
