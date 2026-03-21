@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer, Collapse } from 'antd';
-import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined } from '@ant-design/icons';
+import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined, BulbOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { queryApi } from '../services/api';
 
@@ -32,6 +32,9 @@ function Query() {
   const [currentResult, setCurrentResult] = useState<QueryResult | null>(null);
   const [sqlModalVisible, setSqlModalVisible] = useState(false);
   const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
+  const [analyzeModalVisible, setAnalyzeModalVisible] = useState(false);
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -74,6 +77,27 @@ function Query() {
     }
   };
 
+  const handleAnalyze = async () => {
+    if (!currentResult) return;
+
+    setAnalyzeLoading(true);
+    try {
+      const result = await queryApi.analyze({
+        query: input || '历史查询',
+        result: currentResult.data,
+        thinkProcess: currentResult.thinkProcess || '',
+        tables: currentResult.tables,
+      });
+      setAnalyzeResult(result.analysis);
+      setAnalyzeModalVisible(true);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || '分析失败，请重试';
+      message.error(errorMsg);
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  };
+
   const columns: ColumnsType<any> = currentResult?.columns.map((col, index) => ({
     title: col,
     dataIndex: col,
@@ -91,12 +115,21 @@ function Query() {
           extra={
             <Space>
               {currentResult && (
-                <Button
-                  icon={<CodeOutlined />}
-                  onClick={() => setSqlModalVisible(true)}
-                >
-                  查看 SQL
-                </Button>
+                <>
+                  <Button
+                    icon={<BulbOutlined />}
+                    onClick={handleAnalyze}
+                    loading={analyzeLoading}
+                  >
+                    AI 分析
+                  </Button>
+                  <Button
+                    icon={<CodeOutlined />}
+                    onClick={() => setSqlModalVisible(true)}
+                  >
+                    查看 SQL
+                  </Button>
+                </>
               )}
               <Button
                 icon={<HistoryOutlined />}
@@ -220,6 +253,31 @@ function Query() {
         }}>
           {currentResult?.sql}
         </pre>
+      </Modal>
+
+      {/* AI 分析结果弹窗 */}
+      <Modal
+        title="AI 分析结果"
+        open={analyzeModalVisible}
+        onCancel={() => setAnalyzeModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setAnalyzeModalVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={700}
+      >
+        <div style={{
+          background: '#f5f5f5',
+          padding: '16px',
+          borderRadius: '8px',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          maxHeight: '400px',
+          overflow: 'auto',
+        }}>
+          {analyzeResult}
+        </div>
       </Modal>
 
       {/* 历史记录抽屉 */}

@@ -37,6 +37,31 @@
 - [x] 修改 `backend/src/routes/query.ts` 新增 POST /api/query/analyze 路由
 - [x] 所有 21 个后端测试通过
 
+### 2026-03-21 (下午) - 阶段 D 完成
+
+**阶段 D: 前端 - AI 分析按钮及展示**
+
+- [x] 修改 `frontend/src/services/api.ts` 新增 analyze API
+- [x] 修改 `frontend/src/pages/Query.tsx`
+  - 添加 BulbOutlined 图标导入
+  - 添加 analyzeLoading、analyzeResult、analyzeModalVisible 状态
+  - 添加 handleAnalyze 函数
+  - 添加 "AI 分析" 按钮
+  - 添加分析结果弹窗
+- [x] TypeScript 类型检查通过（Query.tsx, api.ts）
+
+---
+
+**SQL 别名以数字开头问题修复**
+
+- [x] 修改 `backend/src/services/ai.ts` 新增 analyze 方法
+  - 接收 query、result、thinkProcess、tables 参数
+  - 构建分析提示词发送给 AI
+  - 返回分析结果
+- [x] 修改 `backend/src/controllers/query.ts` 新增 analyze 方法
+- [x] 修改 `backend/src/routes/query.ts` 新增 POST /api/query/analyze 路由
+- [x] 所有 21 个后端测试通过
+
 ---
 
 **SQL 别名以数字开头问题修复**

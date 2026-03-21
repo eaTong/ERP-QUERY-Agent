@@ -25,6 +25,15 @@ export const queryApi = {
     const response = await apiClient.get('/query/history');
     return response.data;
   },
+  analyze: async (params: {
+    query: string;
+    result: Record<string, unknown>[];
+    thinkProcess: string;
+    tables: string[];
+  }) => {
+    const response = await apiClient.post('/query/analyze', params);
+    return response.data;
+  },
 };
 
 export const dataApi = {
