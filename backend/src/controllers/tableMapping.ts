@@ -5,13 +5,13 @@ import { logger } from '../utils/logger';
 export class TableMappingController {
   async getTableMappings(req: Request, res: Response) {
     try {
-      const { dataSourceId } = req.query;
+      const { dataSourceId, keyword } = req.query;
 
       let tableMappings;
       if (dataSourceId) {
         tableMappings = await tableMappingService.findByDataSourceId(dataSourceId as string);
       } else {
-        tableMappings = await tableMappingService.findAll();
+        tableMappings = await tableMappingService.findAll(keyword as string | undefined);
       }
 
       res.json(tableMappings);

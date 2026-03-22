@@ -5,8 +5,19 @@ import mysql from 'mysql2/promise';
 import mssql from 'mssql';
 
 export class DataSourceService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { host: { contains: keyword } },
+            { database: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.dataSource.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

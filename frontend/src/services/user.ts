@@ -32,8 +32,9 @@ export interface Menu {
 }
 
 export const userApi = {
-  list: async (): Promise<User[]> => {
-    const response = await apiClient.get<User[]>('/users');
+  list: async (keyword?: string): Promise<User[]> => {
+    const params = keyword ? { keyword } : {};
+    const response = await apiClient.get<User[]>('/users', { params });
     return response.data;
   },
 
@@ -67,8 +68,9 @@ export const userApi = {
 };
 
 export const roleApi = {
-  list: async (): Promise<Role[]> => {
-    const response = await apiClient.get<Role[]>('/roles');
+  list: async (keyword?: string): Promise<Role[]> => {
+    const params = keyword ? { keyword } : {};
+    const response = await apiClient.get<Role[]>('/roles', { params });
     return response.data;
   },
 
@@ -98,13 +100,15 @@ export const roleApi = {
 };
 
 export const menuApi = {
-  list: async (): Promise<Menu[]> => {
-    const response = await apiClient.get<Menu[]>('/menus');
+  list: async (keyword?: string): Promise<Menu[]> => {
+    const params = keyword ? { keyword } : {};
+    const response = await apiClient.get<Menu[]>('/menus', { params });
     return response.data;
   },
 
-  getTree: async (): Promise<Menu[]> => {
-    const response = await apiClient.get<Menu[]>('/menus/tree');
+  getTree: async (keyword?: string): Promise<Menu[]> => {
+    const params = keyword ? { keyword } : {};
+    const response = await apiClient.get<Menu[]>('/menus/tree', { params });
     return response.data;
   },
 

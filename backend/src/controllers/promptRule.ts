@@ -5,13 +5,13 @@ import { logger } from '../utils/logger';
 export class PromptRuleController {
   async getPromptRules(req: Request, res: Response) {
     try {
-      const { enabled } = req.query;
+      const { enabled, keyword } = req.query;
 
       let promptRules;
       if (enabled === '1') {
         promptRules = await promptRuleService.findEnabled();
       } else {
-        promptRules = await promptRuleService.findAll();
+        promptRules = await promptRuleService.findAll(keyword as string | undefined);
       }
 
       res.json(promptRules);

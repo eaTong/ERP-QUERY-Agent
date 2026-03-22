@@ -3,9 +3,10 @@ import { menuService } from '../services/menu';
 import { logger } from '../utils/logger';
 
 export class MenuController {
-  async getMenus(_req: Request, res: Response) {
+  async getMenus(req: Request, res: Response) {
     try {
-      const menus = await menuService.findAll();
+      const { keyword } = req.query;
+      const menus = await menuService.findAll(keyword as string | undefined);
       res.json(menus);
     } catch (error) {
       logger.error('Get menus error:', error);
@@ -13,9 +14,10 @@ export class MenuController {
     }
   }
 
-  async getMenuTree(_req: Request, res: Response) {
+  async getMenuTree(req: Request, res: Response) {
     try {
-      const menus = await menuService.findTree();
+      const { keyword } = req.query;
+      const menus = await menuService.findTree(keyword as string | undefined);
       res.json(menus);
     } catch (error) {
       logger.error('Get menu tree error:', error);

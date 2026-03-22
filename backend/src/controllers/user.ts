@@ -3,9 +3,10 @@ import { userService } from '../services/user';
 import { logger } from '../utils/logger';
 
 export class UserController {
-  async getUsers(_req: Request, res: Response) {
+  async getUsers(req: Request, res: Response) {
     try {
-      const users = await userService.findAll();
+      const { keyword } = req.query;
+      const users = await userService.findAll(keyword as string | undefined);
       res.json(users);
     } catch (error) {
       logger.error('Get users error:', error);

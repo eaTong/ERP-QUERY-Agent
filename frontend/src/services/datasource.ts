@@ -44,8 +44,9 @@ export interface PromptRule {
 }
 
 export const dataSourceApi = {
-  list: async (): Promise<DataSource[]> => {
-    const response = await apiClient.get<DataSource[]>('/data-sources');
+  list: async (keyword?: string): Promise<DataSource[]> => {
+    const params = keyword ? { keyword } : {};
+    const response = await apiClient.get<DataSource[]>('/data-sources', { params });
     return response.data;
   },
 
@@ -85,8 +86,10 @@ export const dataSourceApi = {
 };
 
 export const tableMappingApi = {
-  list: async (dataSourceId?: string): Promise<TableMapping[]> => {
-    const params = dataSourceId ? { dataSourceId } : {};
+  list: async (dataSourceId?: string, keyword?: string): Promise<TableMapping[]> => {
+    const params: Record<string, string> = {};
+    if (dataSourceId) params.dataSourceId = dataSourceId;
+    if (keyword) params.keyword = keyword;
     const response = await apiClient.get<TableMapping[]>('/table-mappings', { params });
     return response.data;
   },
@@ -138,8 +141,10 @@ export const fieldMappingApi = {
 };
 
 export const promptRuleApi = {
-  list: async (enabledOnly?: boolean): Promise<PromptRule[]> => {
-    const params = enabledOnly ? { enabled: '1' } : {};
+  list: async (enabledOnly?: boolean, keyword?: string): Promise<PromptRule[]> => {
+    const params: Record<string, string> = {};
+    if (enabledOnly) params.enabled = '1';
+    if (keyword) params.keyword = keyword;
     const response = await apiClient.get<PromptRule[]>('/prompt-rules', { params });
     return response.data;
   },

@@ -1,8 +1,18 @@
 import prisma from '../models';
 
 export class PromptRuleService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { description: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.promptRule.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

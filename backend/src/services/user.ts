@@ -5,8 +5,18 @@ import { User } from '@prisma/client';
 const SALT_ROUNDS = 10;
 
 export class UserService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { username: { contains: keyword } },
+            { email: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.user.findMany({
+      where,
       select: {
         id: true,
         username: true,

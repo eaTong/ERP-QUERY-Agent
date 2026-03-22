@@ -3,6 +3,8 @@ import { Table, Button, Modal, Form, Input, Select, TreeSelect, message, Popconf
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { roleApi, menuApi, Role, Menu } from '../../services/user';
 
+const { Search } = Input;
+
 // 转换菜单数据为 TreeSelect 需要的格式
 const convertMenuToTreeSelect = (menus: Menu[]): { value: string; title: string; children: any[] }[] => {
   return menus.map(menu => ({
@@ -21,11 +23,12 @@ export default function RoleManage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedMenuIds, setSelectedMenuIds] = useState<string[]>([]);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
-  const fetchRoles = async () => {
+  const fetchRoles = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await roleApi.list();
+      const data = await roleApi.list(searchKeyword);
       setRoles(data);
     } catch (error) {
       message.error('获取角色列表失败');
@@ -47,9 +50,14 @@ export default function RoleManage() {
   };
 
   useEffect(() => {
-    fetchRoles();
+    fetchRoles(keyword);
     fetchMenus();
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchRoles(value);
+  };
 
   const handleAdd = () => {
     setEditingRole(null);
@@ -161,6 +169,15 @@ export default function RoleManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加角色
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索角色名称、代码、描述"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Table columns={columns} dataSource={roles} rowKey="id" loading={loading} />

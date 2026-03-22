@@ -1,8 +1,19 @@
 import prisma from '../models';
 
 export class TableMappingService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { localAlias: { contains: keyword } },
+            { externalTableName: { contains: keyword } },
+            { useCase: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.tableMapping.findMany({
+      where,
       include: {
         dataSource: true,
         fields: true,

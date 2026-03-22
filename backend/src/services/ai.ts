@@ -43,7 +43,7 @@ const SYSTEM_PROMPT_RULES: Record<string, { name: string; description: string; c
     {
       name: 'SQLServer语法注意事项',
       description: 'SQLServer数据库的特定语法要求',
-      content: 'SQL Server 语法规则：\n1. 以数字开头的列名必须使用方括号包裹，如 [20htbh]、[2023year]\n2. **列别名也不能以数字开头**，如果需要定义以数字开头的别名，必须用方括号包裹，如 `SELECT col AS [20合同个数]`\n3. 别名和列名之间不能有空格，如 tk.[20htbh]，不能写成 tk. [20htbh]\n4. 在AS子句中定义列别名时，格式为：列名 AS 别名\n5. 在ORDER BY子句中不能直接使用SELECT列表中定义的列别名，必须重复CASE表达式或使用数字位置',
+      content: 'SQL Server 语法规则：\n1. 以数字开头的列名必须使用方括号包裹，如 [20htbh]、[2023year]\n2. **列别名也不能以数字开头**，如果需要定义以数字开头的别名，必须用方括号包裹，如 SELECT col AS [20合同个数]\n3. 别名和列名之间不能有空格，如 tk.[20htbh]，不能写成 tk. [20htbh]\n4. 在AS子句中定义列别名时，格式为：列名 AS 别名\n5. 在ORDER BY子句中不能直接使用SELECT列表中定义的列别名，必须重复CASE表达式或使用数字位置\n6. **【重要】表别名必须以字母开头，不能以数字开头**。例如表名 "Form_Custom_TK0022" 的别名不能是 "20t" 或 "2026t"，而应该是 "t2026" 或 "formTk" 等以字母开头的别名',
     },
   ],
   mysql: [],

@@ -3,6 +3,8 @@ import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, 
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { dataSourceApi, DataSource } from '../../services/datasource';
 
+const { Search } = Input;
+
 export default function DataSourceManage() {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(false);
@@ -10,11 +12,12 @@ export default function DataSourceManage() {
   const [editingSource, setEditingSource] = useState<DataSource | null>(null);
   const [form] = Form.useForm();
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState('');
 
-  const fetchDataSources = async () => {
+  const fetchDataSources = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await dataSourceApi.list();
+      const data = await dataSourceApi.list(searchKeyword);
       setDataSources(data);
     } catch (error) {
       message.error('获取数据源列表失败');
@@ -24,8 +27,13 @@ export default function DataSourceManage() {
   };
 
   useEffect(() => {
-    fetchDataSources();
+    fetchDataSources(keyword);
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchDataSources(value);
+  };
 
   const handleAdd = () => {
     setEditingSource(null);
@@ -152,6 +160,15 @@ export default function DataSourceManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加数据源
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索名称、主机、数据库"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Table columns={columns} dataSource={dataSources} rowKey="id" loading={loading} />

@@ -3,9 +3,10 @@ import { roleService } from '../services/role';
 import { logger } from '../utils/logger';
 
 export class RoleController {
-  async getRoles(_req: Request, res: Response) {
+  async getRoles(req: Request, res: Response) {
     try {
-      const roles = await roleService.findAll();
+      const { keyword } = req.query;
+      const roles = await roleService.findAll(keyword as string | undefined);
       res.json(roles);
     } catch (error) {
       logger.error('Get roles error:', error);

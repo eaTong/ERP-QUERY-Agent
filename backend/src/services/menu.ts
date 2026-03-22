@@ -1,8 +1,18 @@
 import prisma from '../models';
 
 export class MenuService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { path: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.menu.findMany({
+      where,
       orderBy: { sort: 'asc' },
     });
   }
@@ -13,8 +23,18 @@ export class MenuService {
     });
   }
 
-  async findTree() {
+  async findTree(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { path: { contains: keyword } },
+          ],
+        }
+      : {};
+
     const menus = await prisma.menu.findMany({
+      where,
       orderBy: { sort: 'asc' },
     });
 

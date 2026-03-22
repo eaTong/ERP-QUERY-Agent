@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag, Switch, InputNumber, Divider } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, CheckOutlined, CloseOutlined, CheckSquareOutlined, BorderOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag, Switch, Divider } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { tableMappingApi, dataSourceApi, fieldMappingApi, TableMapping, DataSource, FieldMapping } from '../../services/datasource';
+
+const { Search } = Input;
 
 export default function TableMappingManage() {
   const [tableMappings, setTableMappings] = useState<TableMapping[]>([]);
@@ -20,11 +22,12 @@ export default function TableMappingManage() {
   const [editingFieldValues, setEditingFieldValues] = useState<Partial<FieldMapping>>({});
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [batchDisplayRules, setBatchDisplayRules] = useState('');
+  const [keyword, setKeyword] = useState('');
 
-  const fetchTableMappings = async () => {
+  const fetchTableMappings = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await tableMappingApi.list();
+      const data = await tableMappingApi.list(undefined, searchKeyword);
       setTableMappings(data);
     } catch (error) {
       message.error('获取表映射列表失败');
@@ -43,9 +46,14 @@ export default function TableMappingManage() {
   };
 
   useEffect(() => {
-    fetchTableMappings();
+    fetchTableMappings(keyword);
     fetchDataSources();
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchTableMappings(value);
+  };
 
   const handleSyncTables = async (dataSourceId: string) => {
     setSyncingTables(true);
@@ -180,9 +188,9 @@ export default function TableMappingManage() {
     try {
       const updates = selectedRowKeys.map(id => {
         const field = tableFields.find(f => f.id === id);
-        if (!field) return { id, localAlias: '' };
+        if (!field) return { id: id as string, localAlias: '' };
         // 将下划线命名转为驼峰命名
-        const alias = field.externalFieldName.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        const alias = field.externalFieldName.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
         return { id: id as string, localAlias: alias };
       });
       await Promise.all(updates.map(u => fieldMappingApi.update(u.id, { localAlias: u.localAlias })));
@@ -373,6 +381,15 @@ export default function TableMappingManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加映射
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索本地别名、外部表名、使用场景"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Table columns={columns} dataSource={tableMappings} rowKey="id" loading={loading} />

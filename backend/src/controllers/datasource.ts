@@ -3,9 +3,10 @@ import { dataSourceService } from '../services/datasource';
 import { logger } from '../utils/logger';
 
 export class DataSourceController {
-  async getDataSources(_req: Request, res: Response) {
+  async getDataSources(req: Request, res: Response) {
     try {
-      const dataSources = await dataSourceService.findAll();
+      const { keyword } = req.query;
+      const dataSources = await dataSourceService.findAll(keyword as string | undefined);
       res.json(dataSources);
     } catch (error) {
       logger.error('Get data sources error:', error);

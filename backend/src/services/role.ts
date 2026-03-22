@@ -1,8 +1,19 @@
 import prisma from '../models';
 
 export class RoleService {
-  async findAll() {
+  async findAll(keyword?: string) {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { code: { contains: keyword } },
+            { description: { contains: keyword } },
+          ],
+        }
+      : {};
+
     return prisma.role.findMany({
+      where,
       include: {
         menus: {
           include: {

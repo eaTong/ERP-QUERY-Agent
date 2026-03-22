@@ -3,6 +3,8 @@ import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, 
 import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import { userApi, roleApi, User, Role } from '../../services/user';
 
+const { Search } = Input;
+
 export default function UserManage() {
   const [users, setUsers] = useState<User[]>([]);
   const [, setRoles] = useState<Role[]>([]);
@@ -13,11 +15,12 @@ export default function UserManage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await userApi.list();
+      const data = await userApi.list(searchKeyword);
       setUsers(data);
     } catch (error) {
       message.error('获取用户列表失败');
@@ -36,9 +39,14 @@ export default function UserManage() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(keyword);
     fetchRoles();
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchUsers(value);
+  };
 
   const handleAdd = () => {
     setEditingUser(null);
@@ -151,6 +159,15 @@ export default function UserManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加用户
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索用户名、邮箱"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />

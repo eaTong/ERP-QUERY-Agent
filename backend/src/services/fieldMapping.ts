@@ -41,12 +41,19 @@ export class FieldMappingService {
     });
     const existingNames = new Set(existingFields.map(f => f.externalFieldName));
 
+    // 默认禁用的关键字
+    const disableKeywords = ['Create', 'Edit', 'OrgName', 'OrgCode', 'Remark', 'FileRefer', 'FileCount'];
+
     // 过滤出需要创建的字段
     const fieldsToCreate = fields
       .map((field: Record<string, unknown>) => {
         const fieldName = (field.COLUMN_NAME || field.Field || field.name) as string;
         const dataType = (field.DATA_TYPE || field.Type || field.data_type) as string;
-        return { fieldName, dataType };
+        // 检查是否包含禁用关键字
+        const shouldDisable = disableKeywords.some(keyword =>
+          fieldName.toLowerCase().includes(keyword.toLowerCase())
+        );
+        return { fieldName, dataType, shouldDisable };
       })
       .filter((f) => !existingNames.has(f.fieldName));
 
@@ -59,7 +66,7 @@ export class FieldMappingService {
             externalFieldName: f.fieldName,
             localAlias: f.fieldName,
             fieldDescription: `${f.fieldName} (${f.dataType})`,
-            enabled: 1,
+            enabled: f.shouldDisable ? 0 : 1,
           })),
         });
       } catch (error: any) {

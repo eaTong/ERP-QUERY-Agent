@@ -10,7 +10,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "fetch-sql": "ts-node scripts/fetch-sql-files.ts",
+    "analyze-sql-tables": "ts-node scripts/analyze-sql-tables.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.2",

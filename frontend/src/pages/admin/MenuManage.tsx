@@ -12,8 +12,10 @@ import {
 import type { DataNode } from 'antd/es/tree';
 import { menuApi, Menu } from '../../services/user';
 
+const { Search } = Input;
+
 // 图标名称映射
-const iconMap: Record<string, React.ReactNode> = {
+const iconMap: Record<string, any> = {
   UserOutlined, DashboardOutlined, SettingOutlined, DatabaseOutlined,
   FileTextOutlined, BarChartOutlined, TeamOutlined, LockOutlined,
   SafetyOutlined, MenuOutlined, HomeOutlined, AppstoreOutlined,
@@ -30,11 +32,12 @@ export default function MenuManage() {
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
   const [parentMenu, setParentMenu] = useState<string | undefined>(undefined);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
-  const fetchMenus = async () => {
+  const fetchMenus = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await menuApi.getTree();
+      const data = await menuApi.getTree(searchKeyword);
       setMenus(data);
     } catch (error) {
       message.error('获取菜单列表失败');
@@ -44,8 +47,13 @@ export default function MenuManage() {
   };
 
   useEffect(() => {
-    fetchMenus();
+    fetchMenus(keyword);
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchMenus(value);
+  };
 
   // 转换菜单数据为 Tree 组件需要的格式
   const convertToTreeData = (menuList: Menu[]): DataNode[] => {
@@ -159,6 +167,15 @@ export default function MenuManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加菜单
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索菜单名称、路径"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Spin spinning={loading}>

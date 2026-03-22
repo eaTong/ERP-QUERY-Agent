@@ -3,17 +3,20 @@ import { Table, Button, Modal, Form, Input, Switch, message, Popconfirm, Space }
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { promptRuleApi, PromptRule } from '../../services/datasource';
 
+const { Search } = Input;
+
 export default function PromptRuleManage() {
   const [promptRules, setPromptRules] = useState<PromptRule[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<PromptRule | null>(null);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
-  const fetchPromptRules = async () => {
+  const fetchPromptRules = async (searchKeyword?: string) => {
     setLoading(true);
     try {
-      const data = await promptRuleApi.list();
+      const data = await promptRuleApi.list(false, searchKeyword);
       setPromptRules(data);
     } catch (error) {
       message.error('获取提示词规则列表失败');
@@ -23,8 +26,13 @@ export default function PromptRuleManage() {
   };
 
   useEffect(() => {
-    fetchPromptRules();
+    fetchPromptRules(keyword);
   }, []);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    fetchPromptRules(value);
+  };
 
   const handleAdd = () => {
     setEditingRule(null);
@@ -132,6 +140,15 @@ export default function PromptRuleManage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加规则
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="搜索规则名称、描述"
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
       </div>
 
       <Table columns={columns} dataSource={promptRules} rowKey="id" loading={loading} />
