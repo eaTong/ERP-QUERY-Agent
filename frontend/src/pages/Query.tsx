@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer, Collapse } from 'antd';
 import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined, BulbOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { queryApi } from '../services/api';
+import { ChartToolbar } from '../components/query/ChartToolbar';
+import { AxisSelector } from '../components/query/AxisSelector';
+import { ChartRenderer } from '../components/query/ChartRenderer';
+import {
+  recommendChartType,
+  shouldHideChartType,
+  getDefaultAxisFields,
+  analyzeFields,
+} from '../utils/chartRecommender';
+import type { ChartType } from '../utils/chartRecommender';
 
 const { TextArea } = Input;
 
@@ -54,6 +64,12 @@ function Query() {
   const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
   const [analyzeModalVisible, setAnalyzeModalVisible] = useState(false);
 
+  // 图表相关状态
+  const [isTableView, setIsTableView] = useState(true);
+  const [activeChartType, setActiveChartType] = useState<ChartType | null>(null);
+  const [xAxisField, setXAxisField] = useState<string>('');
+  const [yAxisFields, setYAxisFields] = useState<string[]>([]);
+
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
@@ -82,6 +98,9 @@ function Query() {
     try {
       const result = await queryApi.send(input);
       setCurrentResult(result);
+      // 重置图表视图为表格
+      setIsTableView(true);
+      setActiveChartType(null);
       // 刷新历史
       if (historyDrawerVisible) {
         loadHistory();
@@ -123,6 +142,49 @@ function Query() {
     fixed: index === 0 ? 'left' : undefined,
     width: 120,
   })) || [];
+
+  // 图表推荐计算
+  const chartRecommendation = useMemo(() => {
+    if (!currentResult?.columns || !currentResult?.data) return null;
+    return recommendChartType(currentResult.columns, currentResult.data);
+  }, [currentResult?.columns, currentResult?.data]);
+
+  // 隐藏的图表类型
+  const hiddenChartTypes = useMemo(() => {
+    if (!currentResult?.columns || !currentResult?.data) return [];
+    const hidden: ChartType[] = [];
+    (['line', 'bar', 'pie', 'ring', 'funnel'] as ChartType[]).forEach(type => {
+      if (shouldHideChartType(type, currentResult!.columns, currentResult!.data)) {
+        hidden.push(type);
+      }
+    });
+    return hidden;
+  }, [currentResult?.columns, currentResult?.data]);
+
+  // 当前图表数据（用于轴选择器）
+  const chartColumns = useMemo(() => {
+    if (!currentResult?.columns) return [];
+    return analyzeFields(currentResult.columns, currentResult.data || []).map(f => f.name);
+  }, [currentResult?.columns, currentResult?.data]);
+
+  // 当 activeChartType 变化时，自动设置轴字段
+  useEffect(() => {
+    if (activeChartType && currentResult?.columns && currentResult?.data) {
+      const defaults = getDefaultAxisFields(activeChartType, currentResult.columns, currentResult.data);
+      setXAxisField(defaults.xAxis);
+      setYAxisFields(defaults.yAxis);
+    }
+  }, [activeChartType, currentResult?.columns, currentResult?.data]);
+
+  // 图表切换处理
+  const handleChartSelect = (type: ChartType) => {
+    setActiveChartType(type);
+    setIsTableView(false);
+  };
+
+  const handleShowTable = () => {
+    setIsTableView(true);
+  };
 
   return (
     <div style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 200px)' }}>
@@ -205,32 +267,71 @@ function Query() {
                       key: 'think',
                       label: 'AI 思考过程',
                       children: (
-                        <pre style={{
-                          background: '#f5f5f5',
-                          padding: '12px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                          maxHeight: '200px',
-                          overflow: 'auto',
-                        }}>
-                          {currentResult.thinkProcess}
-                        </pre>
+                        <div
+                          className="markdown-content"
+                          style={{
+                            background: '#fafafa',
+                            padding: '12px',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            maxHeight: '300px',
+                            overflow: 'auto',
+                          }}
+                        >
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {currentResult.thinkProcess}
+                          </ReactMarkdown>
+                        </div>
                       ),
                     }]}
                   />
                 )}
 
                 {currentResult.data.length > 0 ? (
-                  <Table
-                    dataSource={currentResult.data}
-                    columns={columns}
-                    rowKey={(_, index) => index?.toString() || '0'}
-                    pagination={{ pageSize: 20, showSizeChanger: true }}
-                    scroll={{ x: 'max-content', y: 400 }}
-                    size="small"
-                  />
+                  <>
+                    {/* 图表工具栏 */}
+                    <ChartToolbar
+                      recommendation={chartRecommendation}
+                      hiddenChartTypes={hiddenChartTypes}
+                      activeChart={activeChartType}
+                      onChartSelect={handleChartSelect}
+                      onShowTable={handleShowTable}
+                      isTableView={isTableView}
+                    />
+
+                    {/* 轴选择器 - 仅在图表视图下显示 */}
+                    {!isTableView && activeChartType && (
+                      <AxisSelector
+                        columns={chartColumns}
+                        chartType={activeChartType}
+                        xAxis={xAxisField}
+                        yAxis={yAxisFields}
+                        onXAxisChange={setXAxisField}
+                        onYAxisChange={setYAxisFields}
+                      />
+                    )}
+
+                    {/* 图表视图 */}
+                    {!isTableView && activeChartType ? (
+                      <ChartRenderer
+                        type={activeChartType}
+                        columns={chartColumns}
+                        data={currentResult.data}
+                        xAxis={xAxisField}
+                        yAxis={yAxisFields}
+                      />
+                    ) : (
+                      /* 表格视图 */
+                      <Table
+                        dataSource={currentResult.data}
+                        columns={columns}
+                        rowKey={(_, index) => index?.toString() || '0'}
+                        pagination={{ pageSize: 20, showSizeChanger: true }}
+                        scroll={{ x: 'max-content', y: 400 }}
+                        size="small"
+                      />
+                    )}
+                  </>
                 ) : (
                   <Empty description="查询结果为空" />
                 )}
@@ -296,18 +397,21 @@ function Query() {
                     key: 'think',
                     label: '分析过程',
                     children: (
-                      <pre style={{
-                        background: '#f5f5f5',
-                        padding: '12px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        maxHeight: '200px',
-                        overflow: 'auto',
-                      }}>
-                        {thinkProcess}
-                      </pre>
+                      <div
+                        className="markdown-content"
+                        style={{
+                          background: '#fafafa',
+                          padding: '12px',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          maxHeight: '300px',
+                          overflow: 'auto',
+                        }}
+                      >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {thinkProcess}
+                        </ReactMarkdown>
+                      </div>
                     ),
                   }]}
                 />
