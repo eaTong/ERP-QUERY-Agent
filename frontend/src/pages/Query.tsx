@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Input, Button, Card, Spin, Empty, message, Table, Tag, Space, Modal, Drawer, Collapse } from 'antd';
-import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined, BulbOutlined } from '@ant-design/icons';
+import { SendOutlined, HistoryOutlined, CodeOutlined, TableOutlined, BulbOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { queryApi } from '../services/api';
 import { ChartToolbar } from '../components/query/ChartToolbar';
 import { AxisSelector } from '../components/query/AxisSelector';
@@ -70,6 +72,9 @@ function Query() {
   const [xAxisField, setXAxisField] = useState<string>('');
   const [yAxisFields, setYAxisFields] = useState<string[]>([]);
 
+  // PDF导出ref
+  const analyzeContentRef = useRef<HTMLDivElement>(null);
+
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
@@ -131,6 +136,53 @@ function Query() {
       message.error(errorMsg);
     } finally {
       setAnalyzeLoading(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    const content = analyzeContentRef.current;
+    if (!content) {
+      message.error('无法获取分析内容');
+      return;
+    }
+
+    try {
+      message.loading({ content: '正在生成PDF...', key: 'pdf' });
+
+      // 生成文件名：AI分析报告 + 用户查询内容
+      const queryText = input.trim() || '历史查询';
+      const sanitizedQuery = queryText.slice(0, 30).replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `AI分析报告_${sanitizedQuery}`;
+
+      // 使用html2canvas截取内容
+      const canvas = await html2canvas(content, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`${fileName}.pdf`);
+
+      message.success({ content: 'PDF导出成功', key: 'pdf' });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      message.error({ content: 'PDF导出失败', key: 'pdf' });
     }
   };
 
@@ -379,6 +431,13 @@ function Query() {
         open={analyzeModalVisible}
         onCancel={() => setAnalyzeModalVisible(false)}
         footer={[
+          <Button
+            key="export"
+            icon={<FilePdfOutlined />}
+            onClick={handleExportPdf}
+          >
+            导出 PDF
+          </Button>,
           <Button key="close" type="primary" onClick={() => setAnalyzeModalVisible(false)}>
             关闭
           </Button>,
@@ -388,7 +447,7 @@ function Query() {
         {analyzeResult && (() => {
           const { thinkProcess, markdown } = parseAnalysisResult(analyzeResult);
           return (
-            <div>
+            <div ref={analyzeContentRef}>
               {thinkProcess && (
                 <Collapse
                   ghost
