@@ -1,0 +1,783 @@
+/* === 基础容器 === */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050a1a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* === 粒子画布 === */
+.particles-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* === 网格叠加层 === */
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: 2;
+  animation: gridPulse 4s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* === 扫描线效果 === */
+.scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.scanline {
+  position: absolute;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.3) 50%,
+    transparent 100%
+  );
+  height: 2px;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+  transform: rotate(var(--angle));
+  opacity: 0;
+  animation: scanDrift var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.scanline::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(180deg,
+    transparent,
+    rgba(0, 240, 255, 0.1) 50%,
+    transparent
+  );
+}
+
+.scanline:nth-child(1) {
+  --angle: -35deg;
+  --duration: 7s;
+  --delay: 0s;
+  --start-x: -30%;
+  --start-y: -20%;
+  --end-x: 130%;
+  --end-y: 120%;
+  width: 70%;
+}
+
+.scanline:nth-child(2) {
+  --angle: 42deg;
+  --duration: 9s;
+  --delay: -2s;
+  --start-x: 120%;
+  --start-y: -15%;
+  --end-x: -30%;
+  --end-y: 115%;
+  width: 55%;
+}
+
+.scanline:nth-child(3) {
+  --angle: -58deg;
+  --duration: 8s;
+  --delay: -4s;
+  --start-x: 50%;
+  --start-y: 110%;
+  --end-x: -40%;
+  --end-y: -20%;
+  width: 60%;
+}
+
+.scanline:nth-child(4) {
+  --angle: 25deg;
+  --duration: 6s;
+  --delay: -1s;
+  --start-x: -20%;
+  --start-y: 70%;
+  --end-x: 120%;
+  --end-y: -30%;
+  width: 50%;
+}
+
+.scanline:nth-child(5) {
+  --angle: -18deg;
+  --duration: 10s;
+  --delay: -3s;
+  --start-x: 90%;
+  --start-y: 100%;
+  --end-x: -10%;
+  --end-y: 10%;
+  width: 65%;
+}
+
+.scanline:nth-child(6) {
+  --angle: 68deg;
+  --duration: 11s;
+  --delay: -5s;
+  --start-x: -25%;
+  --start-y: 40%;
+  --end-x: 125%;
+  --end-y: -10%;
+  width: 45%;
+}
+
+.scanline:nth-child(7) {
+  --angle: -72deg;
+  --duration: 8s;
+  --delay: -6s;
+  --start-x: 100%;
+  --start-y: 20%;
+  --end-x: -20%;
+  --end-y: 80%;
+  width: 50%;
+}
+
+.scanline:nth-child(8) {
+  --angle: 55deg;
+  --duration: 9s;
+  --delay: -7s;
+  --start-x: -15%;
+  --start-y: 85%;
+  --end-x: 115%;
+  --end-y: -25%;
+  width: 55%;
+}
+
+@keyframes scanDrift {
+  0% {
+    left: var(--start-x);
+    top: var(--start-y);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  95% {
+    opacity: 0.8;
+  }
+  100% {
+    left: var(--end-x);
+    top: var(--end-y);
+    opacity: 0;
+  }
+}
+
+/* 随机闪烁的扫描条纹 */
+.scan-flicker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 240, 255, 0.02) 3px,
+    rgba(0, 240, 255, 0.02) 4px
+  );
+  pointer-events: none;
+  animation: flickerMove 0.8s steps(2) infinite;
+}
+
+@keyframes flickerMove {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* === 发光球体 === */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: orbFloat 8s ease-in-out infinite;
+}
+
+.glow-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #00f0ff 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  animation-delay: 0s;
+}
+
+.glow-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -4s;
+}
+
+@keyframes orbFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-10px, 20px) scale(0.9);
+    opacity: 0.3;
+  }
+  75% {
+    transform: translate(30px, 10px) scale(1.05);
+    opacity: 0.45;
+  }
+}
+
+/* === 登录框 === */
+.login-box {
+  position: relative;
+  z-index: 20;
+  width: 420px;
+  padding: 48px 40px;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 20, 40, 0.95) 0%,
+    rgba(5, 15, 30, 0.98) 100%
+  );
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 4px;
+  box-shadow:
+    0 0 40px rgba(0, 240, 255, 0.1),
+    inset 0 0 60px rgba(0, 240, 255, 0.03);
+  animation: boxAppear 1s ease-out;
+}
+
+@keyframes boxAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* === 登录头部 === */
+.login-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.logo-hex {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hexPulse 3s ease-in-out infinite;
+}
+
+.logo-hex::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.logo-icon {
+  font-size: 32px;
+  position: relative;
+  z-index: 1;
+  animation: iconGlow 2s ease-in-out infinite;
+}
+
+@keyframes hexPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.6);
+  }
+}
+
+@keyframes iconGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px #00f0ff);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px #00f0ff);
+  }
+}
+
+.title {
+  font-family: 'Orbitron', 'Rajdhani', 'Audiowide', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  margin: 0;
+  background: linear-gradient(90deg, #00f0ff, #00ff88, #00f0ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleShine 3s linear infinite;
+  position: relative;
+}
+
+@keyframes titleShine {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.title.glitch {
+  animation: glitchText 0.1s linear;
+}
+
+@keyframes glitchText {
+  0% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+    filter: hue-rotate(90deg);
+  }
+  40% {
+    transform: translate(2px, -2px);
+    filter: hue-rotate(180deg);
+  }
+  60% {
+    transform: translate(-1px, 1px);
+    filter: hue-rotate(270deg);
+  }
+  80% {
+    transform: translate(1px, -1px);
+    filter: hue-rotate(360deg);
+  }
+  100% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+}
+
+.subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: rgba(0, 240, 255, 0.6);
+  letter-spacing: 8px;
+  margin: 8px 0 0;
+  text-transform: uppercase;
+}
+
+/* === 登录表单 === */
+.login-form {
+  position: relative;
+  padding: 20px;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.input-glow {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.input-wrapper:focus-within .input-glow {
+  opacity: 1;
+  animation: inputGlowPulse 1s ease-in-out infinite;
+}
+
+@keyframes inputGlowPulse {
+  0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.5; }
+  50% { transform: translateY(-50%) scale(1.2); opacity: 1; }
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  color: rgba(0, 240, 255, 0.5);
+  font-size: 18px;
+  transition: color 0.3s ease;
+}
+
+.input-wrapper:focus-within .input-icon {
+  color: #00f0ff;
+  text-shadow: 0 0 10px #00f0ff;
+}
+
+.cyber-input {
+  background: rgba(0, 10, 20, 0.8) !important;
+  border: 1px solid rgba(0, 240, 255, 0.2) !important;
+  border-radius: 2px !important;
+  color: #00f0ff !important;
+  font-family: 'Rajdhani', monospace !important;
+  font-size: 16px !important;
+  letter-spacing: 2px !important;
+  padding: 14px 16px 14px 48px !important;
+  height: auto !important;
+  transition: all 0.3s ease !important;
+}
+
+.cyber-input::placeholder {
+  color: rgba(0, 240, 255, 0.3) !important;
+  letter-spacing: 2px;
+}
+
+.cyber-input:hover,
+.cyber-input:focus {
+  border-color: rgba(0, 240, 255, 0.5) !important;
+  box-shadow:
+    0 0 20px rgba(0, 240, 255, 0.2),
+    inset 0 0 20px rgba(0, 240, 255, 0.05) !important;
+  background: rgba(0, 20, 40, 0.9) !important;
+}
+
+.cyber-input:focus {
+  outline: none !important;
+  border-color: #00f0ff !important;
+}
+
+/* Ant Design Input 覆盖 */
+.login-form .ant-input-affix-wrapper {
+  background: rgba(0, 10, 20, 0.8) !important;
+  border: 1px solid rgba(0, 240, 255, 0.2) !important;
+  border-radius: 2px !important;
+  padding: 14px 16px 14px 48px !important;
+}
+
+.login-form .ant-input-affix-wrapper:hover,
+.login-form .ant-input-affix-wrapper:focus,
+.login-form .ant-input-affix-wrapper-focused {
+  border-color: rgba(0, 240, 255, 0.5) !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2) !important;
+}
+
+.login-form .ant-input {
+  background: transparent !important;
+  border: none !important;
+  color: #00f0ff !important;
+  font-family: 'Rajdhani', monospace !important;
+  font-size: 16px !important;
+  letter-spacing: 2px !important;
+}
+
+.login-form .ant-input::placeholder {
+  color: rgba(0, 240, 255, 0.3) !important;
+}
+
+.login-form .ant-input-password-icon {
+  color: rgba(0, 240, 255, 0.5) !important;
+}
+
+.login-form .ant-input-password-icon:hover {
+  color: #00f0ff !important;
+}
+
+/* === 按钮 === */
+.button-container {
+  position: relative;
+  margin-top: 32px;
+}
+
+.button-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 60px;
+  background: radial-gradient(ellipse, rgba(0, 240, 255, 0.4) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.button-container:hover .button-glow {
+  opacity: 1;
+  animation: buttonGlowPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonGlowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+}
+
+.cyber-button {
+  position: relative;
+  width: 100%;
+  height: 52px !important;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(0, 100, 200, 0.1) 100%) !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+  border-radius: 2px !important;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+}
+
+.cyber-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 240, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.cyber-button:hover::before {
+  left: 100%;
+}
+
+.cyber-button:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 150, 255, 0.2) 100%) !important;
+  border-color: #00f0ff !important;
+  box-shadow:
+    0 0 30px rgba(0, 240, 255, 0.3),
+    inset 0 0 20px rgba(0, 240, 255, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.cyber-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  font-family: 'Orbitron', 'Rajdhani', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #00f0ff;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  position: relative;
+  z-index: 1;
+}
+
+.cyber-button:hover .button-text {
+  animation: textFlicker 0.1s linear infinite;
+}
+
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Ant Design Button 覆盖 */
+.login-form .ant-btn-primary {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 100, 200, 0.15) 100%) !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+  color: #00f0ff !important;
+  height: 52px !important;
+  font-family: 'Rajdhani', monospace !important;
+  font-size: 16px !important;
+  letter-spacing: 4px !important;
+}
+
+.login-form .ant-btn-primary:hover,
+.login-form .ant-btn-primary:focus {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 150, 255, 0.25) 100%) !important;
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.3) !important;
+}
+
+.login-form .ant-btn-primary:active {
+  background: linear-gradient(135deg, rgba(0, 200, 255, 0.3) 0%, rgba(0, 100, 255, 0.3) 100%) !important;
+}
+
+.login-form .ant-btn-primary.loading {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 100, 200, 0.2) 100%) !important;
+}
+
+/* === 边角装饰 === */
+.corner-accent {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: rgba(0, 240, 255, 0.5);
+  border-style: solid;
+  border-width: 0;
+}
+
+.corner-accent.top-left {
+  top: 0;
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.corner-accent.top-right {
+  top: 0;
+  right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+.corner-accent.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+
+.corner-accent.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* === 页脚 === */
+.login-footer {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.data-stream {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: rgba(0, 240, 255, 0.4);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.blinking {
+  animation: blink 1s linear infinite;
+  color: #00ff88;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.default-account {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  color: rgba(0, 240, 255, 0.3);
+  margin: 0;
+}
+
+/* === 环境光线 === */
+.ambient-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.ambient-line {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.1) 30%,
+    rgba(0, 240, 255, 0.2) 50%,
+    rgba(0, 240, 255, 0.1) 70%,
+    transparent 100%
+  );
+  animation: ambientLine 20s linear infinite;
+  animation-delay: calc(var(--i) * -3s);
+}
+
+.ambient-line:nth-child(1) { top: 10%; width: 60%; left: -60%; }
+.ambient-line:nth-child(2) { top: 25%; width: 40%; right: -40%; }
+.ambient-line:nth-child(3) { top: 40%; width: 50%; left: -50%; }
+.ambient-line:nth-child(4) { top: 55%; width: 35%; right: -35%; }
+.ambient-line:nth-child(5) { top: 70%; width: 45%; left: -45%; }
+.ambient-line:nth-child(6) { top: 85%; width: 55%; right: -55%; }
+
+@keyframes ambientLine {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(200vw); }
+}
+
+/* === 响应式 === */
+@media (max-width: 480px) {
+  .login-box {
+    width: 95%;
+    padding: 32px 20px;
+    margin: 16px;
+  }
+
+  .title {
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    letter-spacing: 4px;
+  }
+
+  .logo-hex {
+    width: 60px;
+    height: 60px;
+  }
+
+  .logo-icon {
+    font-size: 24px;
+  }
+}
